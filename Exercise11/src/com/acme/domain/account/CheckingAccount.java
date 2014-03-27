@@ -1,7 +1,9 @@
 package com.acme.domain.account;
 
+import com.acme.exceptions.OverDraftLimitExceededException;
+import com.acme.exceptions.NotEnoughFundsException;
 
-public class CheckingAccount extends AbstractAccount {
+public class CheckingAccount extends AbstractAccount /*implements Account*/ {
 
 	private double overdraft;
 
@@ -12,7 +14,8 @@ public class CheckingAccount extends AbstractAccount {
 	}
 
 	@Override
-	public void withdraw(final double amount)  {
+	public void withdraw(final double amount) 
+			throws OverDraftLimitExceededException {
 		if (amount < 0) {
 			//TODO: Have a look at the xception throwing
 			throw new IllegalArgumentException("Amount can not be negative");
@@ -21,6 +24,7 @@ public class CheckingAccount extends AbstractAccount {
 			this.balance -= amount;
 		} else {
 			//TODO: throw an exception is applicable
+			throw new OverDraftLimitExceededException("Overdraft Limit Exceeded!", amount, this);
 		}
 
 		if (this.balance < amount) {
@@ -29,6 +33,7 @@ public class CheckingAccount extends AbstractAccount {
 			double overdraftNeeded = amount - this.balance;
 			if (overdraft < overdraftNeeded) {
 				//TODO: throw an exception is applicable. Ship an information how much money can we withdrawn within the exception  
+				throw new OverDraftLimitExceededException("Overdraft Limit Exceeded!", amount, this);
 			} else {
 				// Yes, there is overdraft protection and enough to cover the
 				// amount
@@ -40,16 +45,15 @@ public class CheckingAccount extends AbstractAccount {
 			// Proceed as usual
 			this.balance = this.balance - amount;
 		}
-
-
 	}
 
 	@Override
-	public void deposit(final double amount) {
+	public void deposit(final double amount) throws IllegalArgumentException {
 		if (amount > 0) {
 			this.balance += amount;
 		} else {
 			//TODO: throw an exception is applicable
+			throw new IllegalArgumentException("Illegal argument!");
 		}
 
 	}

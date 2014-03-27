@@ -1,5 +1,7 @@
 package com.acme.domain.account;
 
+import com.acme.exceptions.NotEnoughFundsException;
+
 
 public abstract class AbstractAccount implements Account {
 
@@ -27,10 +29,9 @@ public abstract class AbstractAccount implements Account {
 		return id;
 	}
 
-	//
-	public abstract void deposit(final double amount);
+	public abstract void deposit(final double amount) throws IllegalArgumentException ;
 
-	public abstract void withdraw(final double amount);
+	public abstract void withdraw(final double amount) throws NotEnoughFundsException;
 
 	public void setState(final AccountState state) {
 		this.state = state;

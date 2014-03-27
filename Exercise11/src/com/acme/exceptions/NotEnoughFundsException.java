@@ -2,9 +2,16 @@ package com.acme.exceptions;
 
 public class NotEnoughFundsException extends BankException {
 	
-	public NotEnoughFundsException() {}
+	private double amount;
 	
-	public NotEnoughFundsException(String msg) {
+	public NotEnoughFundsException() { }
+	
+	public NotEnoughFundsException(final double amount) { 
+		this.amount = amount; 
+	}
+	
+	public NotEnoughFundsException(String msg, final double amount) {
 		super(msg);
+		this.amount = amount;
 	}
 }
