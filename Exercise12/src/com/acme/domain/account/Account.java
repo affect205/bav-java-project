@@ -16,5 +16,5 @@ public interface Account {
 
 	double getBalance();
 
-	long decimalValue();
+	long decimalValue(double value);
 }

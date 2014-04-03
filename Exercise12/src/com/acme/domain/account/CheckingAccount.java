@@ -101,8 +101,13 @@ implements Account {
 	public int hashCode() {
 		int prime = 44;
 		int result = 1;
-		result = prime * result + (int)Math.round(balance);
-		result = prime * result + (int)Math.round(overdraft);
+		result = prime * result + (int)decimalValue(balance);
+		result = prime * result + (int)decimalValue(overdraft);
 		return result;
+	}
+	
+	
+	public long decimalValue(double value) {
+		return Math.round(value);
 	}
 }

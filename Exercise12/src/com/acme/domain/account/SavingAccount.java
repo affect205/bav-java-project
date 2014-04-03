@@ -68,7 +68,12 @@ implements Account {
 	public int hashCode() {
 		int prime = 44;
 		int result = 1;
-		result = prime * result + (int)Math.round(balance);
+		result = prime * result + (int)decimalValue(balance);
 		return result;
+	}
+	
+	@Override
+	public long decimalValue(double value) {
+		return Math.round(value);
 	}
 }
