@@ -39,4 +39,36 @@ implements Account {
 		return "Account: " + this.getAccountType().getType()
 				+ " Balance: " + this.getBalance();
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		
+		if ( this == obj ) {
+			return true;
+		}
+		
+		if ( obj == null ) {
+			return false;
+		}
+		
+		if ( this.getClass() != obj.getClass() ) {
+			return false;
+		}
+		
+		SavingAccount other = (SavingAccount) obj;
+		
+		if ( balance != other.getBalance() ) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	@Override
+	public int hashCode() {
+		int prime = 44;
+		int result = 1;
+		result = prime * result + (int)Math.round(balance);
+		return result;
+	}
 }

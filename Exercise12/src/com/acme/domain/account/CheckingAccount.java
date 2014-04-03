@@ -71,4 +71,38 @@ implements Account {
 	public double getOverdraft() {
 		return overdraft;
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		
+		if ( this == obj ) {
+			return true;
+		}
+		
+		if ( obj == null ) {
+			return false;
+		}
+		
+		if ( this.getClass() != obj.getClass() ) {
+			return false;
+		}
+		
+		CheckingAccount other = (CheckingAccount) obj;
+		
+		if ( balance != other.getBalance() ||
+				overdraft != other.getOverdraft() ) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	@Override
+	public int hashCode() {
+		int prime = 44;
+		int result = 1;
+		result = prime * result + (int)Math.round(balance);
+		result = prime * result + (int)Math.round(overdraft);
+		return result;
+	}
 }

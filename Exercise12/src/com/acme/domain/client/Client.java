@@ -53,6 +53,7 @@ public class Client implements Serializable {
 		
 		StringBuilder str = new StringBuilder();
 		str.append(this.getSalutation());
+		str.append("\n");
 		
 		for ( Account account : this.accounts ) {
 			str.append(account.toString());
