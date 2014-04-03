@@ -29,18 +29,17 @@ public class CheckingAccountTest {
 	public void testWithdraw() {
 		com.acme.domain.account.Account account2 = new com.acme.domain.account.CheckingAccount(2, 100, 10);
 
-		/*
 		assertEquals(100.0, account2.getBalance());
 		try {
 			account2.withdraw(10);
-		} catch (NoEnoughFundsException e1) {
+		} catch (NotEnoughFundsException e1) {
 			assertTrue(false);
 		}
 		assertEquals(90.0, account2.getBalance());
 
 		try {
 			account2.withdraw(90);
-		} catch (NoEnoughFundsException e) {
+		} catch (NotEnoughFundsException e) {
 			assertTrue(false);
 		}
 		assertEquals(0.0, account2.getBalance());
@@ -48,10 +47,9 @@ public class CheckingAccountTest {
 		try {
 			account2.withdraw(190);
 			assertTrue(false);
-		} catch (NoEnoughFundsException e) {
+		} catch (NotEnoughFundsException e) {
 			assertTrue(true);
 		}
-		*/
 
 	}
 
