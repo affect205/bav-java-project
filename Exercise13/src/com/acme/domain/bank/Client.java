@@ -59,6 +59,7 @@ public class Client implements Serializable {
 			str.append(account.toString());
 			str.append("\n");
 		}
+		
 		return str.toString();
 	}
 	

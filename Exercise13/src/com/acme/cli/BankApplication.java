@@ -45,9 +45,7 @@ public class BankApplication {
 				
 		String key = "def";
 		for ( int i=0; i < args.length; ++i ) 
-		{	
-			System.out.println(args[i]);
-			
+		{		
 			if ( i%2 == 0 ) {
 				keys.add(args[i]);
 				key = args[i];
@@ -85,12 +83,14 @@ public class BankApplication {
 			System.out.println("Bank is not loaded");
 			return;
 		}
-
+		
 		// Now we have a bank.		
 		if (keys.contains("-s")) {
 			saveTheBankToDataSource(bank);
 		}
-
+		
+		// print the bank content
+		System.out.println(bank.toString());
 	}
 
 	private static void initServices() {

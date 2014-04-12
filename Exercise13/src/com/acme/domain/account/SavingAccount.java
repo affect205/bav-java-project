@@ -2,7 +2,8 @@ package com.acme.domain.account;
 
 import com.acme.exceptions.NoEnoughFundsException;
 
-public class SavingAccount extends AbstractAccount {
+public class SavingAccount extends AbstractAccount
+implements Account {
 
 	public SavingAccount(final int id, final double amount) {
 		super(id, amount);

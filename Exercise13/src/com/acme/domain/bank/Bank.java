@@ -9,17 +9,16 @@ public class Bank implements Serializable {
 	
 	public Client addClient(final Client client) {
 		clients[maxClients++] = client;
-		
-		
+		System.out.println("new client...");
 		return client;
 	}
 	
 	@Override
 	public String toString() {
 		
-		StringBuffer str = new StringBuffer();
-		for ( Client client : clients ) {
-			str.append(client.toString());
+		StringBuilder str = new StringBuilder();
+		for ( int i=0; i < maxClients; ++i ) {
+			str.append(clients[i].toString());
 		}
 		str.append("\n");
 		return str.toString();

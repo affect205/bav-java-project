@@ -3,7 +3,8 @@ package com.acme.domain.account;
 import com.acme.exceptions.NoEnoughFundsException;
 import com.acme.exceptions.OverDraftLimitExceededException;
 
-public class CheckingAccount extends AbstractAccount {
+public class CheckingAccount extends AbstractAccount 
+implements Account {
 
 	private double overdraft;
 
