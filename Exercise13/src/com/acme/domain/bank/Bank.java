@@ -7,6 +7,8 @@ public class Bank implements Serializable {
 	private final Client[] clients = new Client[10];
 	private int maxClients = 0;
 	
+	public Bank() { }
+	
 	public Client addClient(final Client client) {
 		clients[maxClients++] = client;
 		System.out.println("new client...");

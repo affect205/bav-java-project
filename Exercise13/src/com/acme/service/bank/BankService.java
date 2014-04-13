@@ -11,7 +11,7 @@ public interface BankService {
 
 	void saveBank(Bank bank, String pathTo) throws IOException;
 
-	Bank loadBank(String pathFrom) throws IOException;
+	Bank loadBank(String pathFrom) throws IOException, ClassNotFoundException;
 
 
 	Client addClient(Bank bank, String name, Gender gender)

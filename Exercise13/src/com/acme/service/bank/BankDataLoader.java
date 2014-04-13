@@ -19,7 +19,6 @@ import com.acme.domain.bank.Gender;
 public class BankDataLoader {
 	private BankService bankService;
 
-
 	/**
 	 * Loads a file which contains data feed in the following format: <br>
 	 * accounttype=c|s;balance=100;overdraft=50;name=John;gender=m|f;

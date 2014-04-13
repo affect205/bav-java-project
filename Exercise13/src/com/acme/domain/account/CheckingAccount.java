@@ -1,13 +1,15 @@
 package com.acme.domain.account;
 
+import java.io.Serializable;
+
 import com.acme.exceptions.NoEnoughFundsException;
 import com.acme.exceptions.OverDraftLimitExceededException;
 
 public class CheckingAccount extends AbstractAccount 
-implements Account {
+implements Account, Serializable {
 
 	private double overdraft;
-
+	
 	public CheckingAccount(final int id, final double amount,
 			final double overdraft) {
 		super(id, amount);

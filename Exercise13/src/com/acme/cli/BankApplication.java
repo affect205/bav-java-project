@@ -39,7 +39,7 @@ public class BankApplication {
 	private static BankService bankService;
 
 	public static void main(final String[] args) throws IOException,
-			BankException, IllegalArgumentException {
+			BankException, IllegalArgumentException, ClassNotFoundException {
 		Map<String, String> arguments = new HashMap(); 
 		Set<String> keys = new HashSet<String>();
 				
@@ -106,8 +106,8 @@ public class BankApplication {
 	}
 
 	
-
-	private static Bank loadBankFromDataSource() throws IOException {
+	private static Bank loadBankFromDataSource() 
+			throws IOException, ClassNotFoundException {
 		return bankService.loadBank("bank.ser");
 	}
 

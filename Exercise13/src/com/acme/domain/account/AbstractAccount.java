@@ -16,6 +16,13 @@ public abstract class AbstractAccount implements Account {
 		return (int) System.currentTimeMillis();
 	}
 
+	/**
+	 * private Contructor for deserialization
+	 */
+	protected AbstractAccount() {
+		
+	}
+	
 	public AbstractAccount(final int id, final double amount) {
 		this.balance = amount;
 		this.id = id;

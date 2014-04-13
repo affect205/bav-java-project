@@ -14,6 +14,8 @@ public class Client implements Serializable {
 
 	private List<Account> accounts = new ArrayList<Account>();
 
+	protected Client() { }
+	
 	public Client(final String name, final Gender gender) {
 		this.name = name;
 		this.gender = gender;
