@@ -5,10 +5,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 import com.acme.domain.bank.Bank;
+import com.acme.domain.bank.Client;
 
 public class BankServer {
 	ServerSocket providerSocket;
@@ -17,8 +17,9 @@ public class BankServer {
 	ObjectInputStream in;
 	String message;
 	
-	// connected clients list
-	private ArrayList<String> clients;
+	// active client
+	private Client active_client = null;
+	private boolean logined = false;
 	
 	private int port = 10002;
 	
@@ -27,7 +28,6 @@ public class BankServer {
 	public BankServer(final Bank bank, final int port) {
 		this.bank = bank;
 		this.port = port;
-		clients = new ArrayList<String>();
 	}
 
 	public void run() {
@@ -57,23 +57,28 @@ public class BankServer {
 					}
 					
 					System.out.println("server> received: " + message);
-											
-					if ( message.contains("-login") ) {
-						 
-						// login command: split the message on command and value
-						StringTokenizer token = new StringTokenizer(message, ":");
-						String cmd = token.nextToken();
-						String val = token.nextToken();
 						
+					// split the message on command and value
+					StringTokenizer token = new StringTokenizer(message, ":");
+					String cmd = token.nextToken();
+					String val = token.nextToken();
+					
+					if ( cmd.equals("-login") ) {
+						 
 						System.out.println("server> request on login... " + val);
 						
-						if ( clients.contains(val) ) {	
+						if ( logined == true && active_client != null 
+								&& active_client.getName().equals(val) ) {	
+							
 							// already login
 							sendMessage("Client already loggined...");
-						} else if ( bank.contains_client(val) ) {
+						} else if ( logined == false && bank.containsClient(val) ) {
+							
 							// client exists - login
-							clients.add(val);
+							active_client = bank.getClientByName(val);
+							logined = true;
 							sendMessage("client is login...");
+							
 						} else {
 							// client doesn't exist - no login
 							sendMessage("no such client...");
@@ -81,24 +86,37 @@ public class BankServer {
 						
 						// close command
 						sendMessage("-bye");
+					}
 					
-					} else if ( message.contains("-balance") ) {
-						
-						// balance command
-						sendMessage("Balance is: 500");
-						sendMessage("-bye");
 					
-					} else if (message.equals("-exit")) {
+					if ( logined == true && active_client != null ) {
 						
-						// exit command
-						clients.clear(); 
-						sendMessage("-bye");
+						// access to commands
+						if ( cmd.equals("-info") ) {
+							
+							// info command
+							sendMessage("Balance is: " + active_client.toString());
+							sendMessage("-bye");
+						
+						} else if ( cmd.equals("-exit") ) {
+							
+							// exit command
+							active_client = null;
+							logined = false;
+							sendMessage("-bye");
+						
+						} else {
+							
+							// unknown command
+							sendMessage("unknown command");
+							sendMessage("-bye");						
+						}
 					
 					} else {
 						
-						// unknown command
-						sendMessage("unknown command");
-						sendMessage("-bye");						
+						// no login - decline request
+						sendMessage("client is not logined");
+						sendMessage("-bye");
 					} 
 						
 				} catch (ClassNotFoundException classnot) {

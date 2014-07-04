@@ -30,7 +30,7 @@ public class Bank implements Serializable {
 		return str.toString();
 	}
 	
-	public boolean contains_client(final String name) {
+	public boolean containsClient(final String name) {
 		
 		for ( Client client : clients ) {
 			if ( client.getName().equals(name) ) {
@@ -38,8 +38,18 @@ public class Bank implements Serializable {
 				return true;
 			}
 		}
-		
 		return false;
+	}
+	
+	public Client getClientByName(final String name) {
+		
+		for ( Client client : clients ) {
+			if ( client.getName().equals(name) ) {
+				// client exists in system
+				return client;
+			}
+		}
+		return null;
 	}
 	
 	

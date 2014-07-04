@@ -35,9 +35,7 @@ public class BankClient {
 				System.out.println("client> Exit from bank...");
 				
 				// close connection
-				client.run("-bye", "");
-				
-				// out of while
+				client.run("-exit", "sm");
 				break;
 					
 			} else {
@@ -46,10 +44,7 @@ public class BankClient {
 				System.out.println("client> Do request (" + cmd + ")...");
 				client.run(cmd, val);
 			} 
-		}
-
-		// exit program
-		System.exit(0);		
+		}	
 	}
 	
 	/**
