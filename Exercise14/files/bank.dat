@@ -1,0 +1,4 @@
+accounttype=c|s;balance=210;overdraft=50;name=Andersen;gender=m;
+accounttype=s;balance=1000;overdraft=500;name=Holmes;gender=m;
+accounttype=c|s;balance=700;overdraft=120;name=Watson;gender=m;
+accounttype=c;balance=1200;overdraft=330;name=Smith;gender=m;
