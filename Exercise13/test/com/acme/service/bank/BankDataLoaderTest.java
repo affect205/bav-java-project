@@ -14,8 +14,8 @@ import com.acme.service.bank.impl.BankServiceImpl;
 
 public class BankDataLoaderTest {
 
-	@Test
 	/*
+	@Test
 	public void testAddClientFromString() {
 		BankDataLoader bankDataLoader = new BankDataLoader();
 		bankDataLoader.setBankService(new BankServiceImpl());
