@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical" >
+
+    <LinearLayout
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content"
+    	android:orientation="vertical" >
+
+        <LinearLayout
+        	android:layout_width="match_parent"
+        	android:layout_height="wrap_content"
+        	android:gravity="center" >
+
+            <TextView
+            	android:id="@+id/tvInfoUser"
+            	android:layout_width="0dp"
+            	android:layout_height="wrap_content"
+            	android:layout_weight="0.10"
+            	android:text="@string/tvInfoUser" />
+
+            <TextView
+            	android:id="@+id/tvInfoLogin"
+            	android:layout_width="0dp"
+            	android:layout_height="wrap_content"
+            	android:layout_weight=".40"
+            	android:gravity="center"
+            	android:text="Large Text"
+            	android:textAppearance="?android:attr/textAppearanceLarge" />
+
+            <Button
+            	android:id="@+id/btnInfoChange"
+            	style="?android:attr/buttonStyleSmall"
+            	android:layout_width="0dp"
+            	android:layout_height="wrap_content"
+            	android:layout_weight="0.30"
+            	android:text="@string/btnInfoChange" />
+
+            <Button
+            	android:id="@+id/btnInfoExit"
+            	style="?android:attr/buttonStyleSmall"
+            	android:layout_width="0dp"
+            	android:layout_height="wrap_content"
+            	android:layout_gravity="center"
+            	android:layout_weight="0.20"
+            	android:text="@string/btnInfoExit" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

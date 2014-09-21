@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/ltLogin"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical" >
+	
+	    <LinearLayout
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content"
+    	android:layout_margin="10dp"
+    	android:layout_marginBottom="50dp"
+    	android:orientation="horizontal" >
+    
+
+    	<TextView
+    		android:id="@+id/tvLogin"
+    		android:layout_width="wrap_content"
+    		android:layout_height="wrap_content"
+    		android:layout_marginRight="36dp"
+    		android:text="@string/tv_login" />
+    	
+
+    	<EditText
+    		android:id="@+id/etLogin"
+    		android:layout_width="match_parent"
+    		android:layout_height="wrap_content"
+    		android:ems="10" />
+    		
+    </LinearLayout>
+    
+
+    <LinearLayout
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content"
+    	android:layout_margin="10dp"
+    	android:layout_marginBottom="50dp"
+    	android:orientation="horizontal" >
+    
+
+    	<TextView
+    		android:id="@+id/tvPassword"
+    		android:layout_width="wrap_content"
+    		android:layout_height="wrap_content"
+    		android:layout_marginRight="10dp"
+    		android:text="@string/tv_password" />
+    	
+
+    	<EditText
+    		android:id="@+id/etPassword"
+    		android:layout_width="match_parent"
+    		android:layout_height="wrap_content"
+    		android:ems="10"
+    		android:inputType="textPassword" >
+
+    	<requestFocus />
+    </EditText>	
+    		
+    </LinearLayout>
+    
+</LinearLayout>

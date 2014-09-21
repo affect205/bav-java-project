@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/ltNew"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	android:padding="10dp"
+	android:visibility="visible" >
+
+    <ScrollView
+    	android:id="@+id/scrlNew"
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content" >
+
+        <LinearLayout
+        	android:id="@+id/ltScrollNew"
+        	android:layout_width="match_parent"
+        	android:layout_height="wrap_content"
+        	android:orientation="vertical" >
+
+            <LinearLayout
+            	android:layout_width="match_parent"
+            	android:layout_height="wrap_content"
+            	android:orientation="vertical" >
+
+            	<LinearLayout
+            		android:layout_width="match_parent"
+            		android:layout_height="match_parent"
+            		android:layout_marginBottom="20dp" >
+
+            		<TextView
+            			android:id="@+id/tvNewMain"
+            			android:layout_width="wrap_content"
+            			android:layout_height="wrap_content"
+            			android:layout_weight="1"
+            			android:gravity="center"
+            			android:text="@string/tvNewMain"
+            			android:textAppearance="?android:attr/textAppearanceMedium" />
+            	</LinearLayout>
+
+            	<LinearLayout
+            		android:layout_width="match_parent"
+            		android:layout_height="wrap_content"
+            		android:layout_marginBottom="20dp"
+            		android:paddingLeft="30dp" >
+
+            		<RadioGroup
+            			android:id="@+id/rdNewGroup"
+            			android:layout_width="wrap_content"
+            			android:layout_height="wrap_content"
+            			android:orientation="horizontal" >
+
+            			<RadioButton
+            				android:id="@+id/rdNewAccount"
+            				android:layout_width="wrap_content"
+            				android:layout_height="wrap_content"
+            				android:checked="true"
+            				android:gravity="center"
+            				android:text="@string/rdNewAccount" />
+
+            			<RadioButton
+            				android:id="@+id/rdNewRecord"
+            				android:layout_width="wrap_content"
+            				android:layout_height="wrap_content"
+            				android:gravity="center"
+            				android:text="@string/rdNewRecord" />
+            		</RadioGroup>
+            	</LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+            	android:id="@+id/ltNewAccount"
+            	android:layout_width="match_parent"
+            	android:layout_height="wrap_content"
+            	android:orientation="vertical" >
+
+            	<LinearLayout
+            		android:layout_width="match_parent"
+            		android:layout_height="wrap_content"
+            		android:layout_marginBottom="20dp" >
+
+            		<TextView
+            			android:id="@+id/tvNewAccountBalance"
+            			android:layout_width="0dp"
+            			android:layout_height="wrap_content"
+            			android:layout_weight=".30"
+            			android:text="@string/tvNewAccountBalance" />
+
+            		<EditText
+            			android:id="@+id/etNewAccountBalance"
+            			android:layout_width="0dp"
+            			android:layout_height="wrap_content"
+            			android:layout_weight=".60"
+            			android:ems="10"
+            			android:inputType="numberDecimal" />
+            	</LinearLayout>
+
+            	<LinearLayout
+            		android:layout_width="match_parent"
+            		android:layout_height="wrap_content"
+            		android:layout_marginBottom="20dp" >
+
+            		<TextView
+            			android:id="@+id/tvNewAccountDesc"
+            			android:layout_width="0dp"
+            			android:layout_height="wrap_content"
+            			android:layout_weight=".30"
+            			android:text="@string/tvNewAccountDesc" />
+
+            		<EditText
+            			android:id="@+id/etNewAccountDesc"
+            			android:layout_width="0dp"
+            			android:layout_height="wrap_content"
+            			android:layout_weight=".60"
+            			android:ems="10" />
+            	</LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+            	android:id="@+id/ltNewRecord"
+            	android:layout_width="match_parent"
+            	android:layout_height="wrap_content"
+            	android:orientation="vertical"
+            	android:visibility="gone" >
+
+            	<LinearLayout
+            		android:layout_width="match_parent"
+            		android:layout_height="wrap_content"
+            		android:layout_marginBottom="20dp" >
+
+            		<TextView
+            			android:id="@+id/tvNewRecAccount"
+            			android:layout_width="wrap_content"
+            			android:layout_height="wrap_content"
+            			android:layout_weight="1"
+            			android:text="@string/tvNewRecAccount" />
+
+            		<Spinner
+            			android:id="@+id/spnNewRecAccounts"
+            			android:layout_width="wrap_content"
+            			android:layout_height="wrap_content"
+            			android:layout_weight="1" />
+            	</LinearLayout>
+
+            	<LinearLayout
+            		android:layout_width="match_parent"
+            		android:layout_height="wrap_content"
+            		android:layout_marginBottom="20dp" >
+
+            		<TextView
+            			android:id="@+id/tvNewRecAmount"
+            			android:layout_width="0dp"
+            			android:layout_height="wrap_content"
+            			android:layout_weight=".40"
+            			android:text="@string/tvNewRecAmount" />
+
+            		<ToggleButton
+            			android:id="@+id/tbtnNewRecOp"
+            			android:layout_width="0dp"
+            			android:layout_height="wrap_content"
+            			android:layout_weight=".16"
+            			android:minHeight="40dip"
+            			android:minWidth="40dip"
+            			android:text="ToggleButton"
+            			android:textOff="@string/tbtnNewRecOpOff"
+            			android:textOn="@string/tbtnNewRecOpOn"
+            			android:textSize="36dp"
+            			android:typeface="normal" />
+
+            		<EditText
+            			android:id="@+id/etNewRecAmount"
+            			android:layout_width="0dp"
+            			android:layout_height="wrap_content"
+            			android:layout_weight=".40"
+            			android:ems="10"
+            			android:inputType="numberDecimal" />
+            	</LinearLayout>
+
+            	<LinearLayout
+            		android:layout_width="match_parent"
+            		android:layout_height="wrap_content"
+            		android:layout_marginBottom="20dp" >
+
+            		<TextView
+            			android:id="@+id/tvNewRecDesc"
+            			android:layout_width="wrap_content"
+            			android:layout_height="wrap_content"
+            			android:layout_weight="1"
+            			android:text="@string/tvNewRecDesc" />
+
+            		<EditText
+            			android:id="@+id/etNewRecDesc"
+            			android:layout_width="wrap_content"
+            			android:layout_height="wrap_content"
+            			android:layout_weight="1"
+            			android:ems="10" />
+            	</LinearLayout>
+
+            	<LinearLayout
+            		android:layout_width="match_parent"
+            		android:layout_height="wrap_content"
+            		android:layout_marginBottom="20dp"
+            		android:layout_weight="1" >
+
+            		<TextView
+            			android:id="@+id/tvNewRecCategory"
+            			android:layout_width="wrap_content"
+            			android:layout_height="wrap_content"
+            			android:layout_weight="1"
+            			android:text="@string/tvNewRecCategory" />
+
+            		<Spinner
+            			android:id="@+id/spnNewRecCategory"
+            			android:layout_width="wrap_content"
+            			android:layout_height="wrap_content"
+            			android:layout_weight="1" />
+            	</LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+            	android:layout_width="match_parent"
+            	android:layout_height="wrap_content"
+            	android:layout_marginBottom="20dp"
+            	android:orientation="vertical" >
+
+                <LinearLayout
+                	android:layout_width="match_parent"
+                	android:layout_height="wrap_content" >
+            		<include layout="@layout/lt_error"/>
+                </LinearLayout>
+
+            	<LinearLayout
+            		android:layout_width="match_parent"
+            		android:layout_height="wrap_content" >
+
+            		<Button
+            			android:id="@+id/btnNewCreate"
+            			android:layout_width="wrap_content"
+            			android:layout_height="wrap_content"
+            			android:layout_weight="1"
+            			android:text="@string/btnNewCreate" />
+            	</LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

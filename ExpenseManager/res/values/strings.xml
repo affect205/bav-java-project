@@ -1,0 +1,63 @@
+<resources>
+
+	<string name="app_name">ExpenseManager</string>
+	<string name="hello_world">Hello world!</string>
+	<string name="menu_settings">Settings</string>
+	<string name="title_activity_main">MainActivity</string>
+	<string name="title_activity_app">AppActivity</string>
+	<string name="tab_header1">Accounts</string>
+	<string name="tab_header2">Add</string>
+	<string name="tv_login">Login</string>
+	<string name="tv_password">Password</string>
+	<string name="btn_submit">Enter</string>
+	<string name="btnNewUser">New user</string>
+	
+	<string name="tvAccountId">ID:</string>
+	<string name="tvAccountBalance">balance:</string>
+	<string name="tvAccountTitle">title:</string>
+	<string name="tvAccountRecords">count:</string>
+	
+	<string name="tvRecordId">ID:</string>
+	<string name="tvRecordTitle">title:</string>
+	<string name="tvRecordDate">date:</string>
+	<string name="tvRecordAmount">amount:</string>
+	
+
+	
+	<string name="tvNewMain">Create:</string>
+	
+	<string name="rdNewAccount">account</string>
+	<string name="rdNewRecord">record</string>
+	
+	<string name="tbtnNewRecOpOn">+</string>
+	<string name="tbtnNewRecOpOff">-</string>
+	<string name="tvNewRecAmount">Amount:</string>
+	<string name="tvNewRecDesc">Notice:</string>
+	<string name="tvNewRecAccount">Account:</string>
+	<string name="tvNewRecCategory">Category:</string>
+	
+	<string name="tvNewAccountBalance">Balance:</string>
+	<string name="tvNewAccountDesc">Notice:</string>
+		
+	<string name="btnNewCreate">create</string>
+	
+
+	
+	<string name="tvInfoUser">user:</string>
+	<string name="btnInfoChange">change</string>
+	<string name="btnInfoExit">exit</string>
+	
+
+	<string name="btnNewUserSubmit">create</string>
+	<string name="tvNewUserTitle">NEW USER:</string>
+	<string name="tvNewUserLogin">Login:</string>
+	<string name="tvNewUserPassword">Password:</string>
+	<string name="tvNewUserPasswordRep">Repeat password:</string>
+	<string name="tvNewUserFirstname">Name:</string>
+	<string name="tvNewUserSurname">Surname:</string>
+	<string name="tvNewUserMiddlename">Middlename:</string>
+	<string name="tvNewUserEmail">Email:</string>
+	<string name="tvNewUserAge">Age:</string>
+	
+	<string name="tvAuthTitle">EXPENSE MANAGER</string>
+</resources>
