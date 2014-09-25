@@ -43,7 +43,9 @@ public class ChatGUI extends JFrame {
 	private static String ACTION_SEND_MESSAGE	= "send_message";
 	private static String ACTION_SEND_FILE 		= "send_file";
 	
-	public static final int PORT = 19000;
+	public static final int PORT_MESSAGE 	= 19000;
+	public static final int PORT_FILE		= 19001;
+	
     public static final String HOST = "localhost";
     
     // команды сервера
@@ -51,15 +53,7 @@ public class ChatGUI extends JFrame {
     private static final String COMMAND_LOGIN 		= ".login";
     private static final String COMMAND_USERLIST 	= ".userlist";
     private static final String COMMAND_FILE 		= ".file";
-    
-    
-    // сокет и клиент для соединения с сервером
-    private static Socket socket;
-    private static ChatClient client;
-    
-	// логин пользователя
-	private String userLogin = "";
-	
+    	
 	// элементы управления
 	private JPanel viewMsgPnl;
 	private JTextArea lineMsgTA;
@@ -81,6 +75,9 @@ public class ChatGUI extends JFrame {
 	
 	// обработчик нажатия кнопки
 	private static ActionListener actionListener;
+	
+	// клиент чата
+	private static ClientChat client;
 		
 	public static void startChat(final String login) {
 	    javax.swing.SwingUtilities.invokeLater(new Runnable() {
@@ -93,9 +90,6 @@ public class ChatGUI extends JFrame {
 	
 	public ChatGUI(final String login) {
 		super("Simple chat");
-		
-		// логин пользователя
-		userLogin = login;
 		
 		// инициализация окна
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -114,15 +108,10 @@ public class ChatGUI extends JFrame {
 	    add(sendMsgPnl, BorderLayout.SOUTH); 
 	    
 	    // запуск клиента
-	 	try {
-	 		socket = new Socket(HOST, PORT);
-	 		client = new ChatClient(socket);
-	 		client.start();
-	 		// выполним инициализацию
-	 		client.doEntrance();
-	 	} catch (Exception e) {
-	 		e.printStackTrace();
-	 	}
+	    client = new ClientChat(login, this);
+	 		
+	    // выполним инициализацию
+	 	client.doEntrance();
 	}
 		
 	/**
@@ -187,7 +176,7 @@ public class ChatGUI extends JFrame {
 	
 	protected void addLineMessage(final String msg) {
 		String text = lineMsgTA.getText();
-		String line = "\n" + getNowStr() + " (" + userLogin + "): " + msg + "\n";
+		String line = "\n" + getNowStr() + " (" + client.getUserLogin() + "): " + msg + "\n";
 		text += line;
 		lineMsgTA.setText(text);
 	}
@@ -206,32 +195,90 @@ public class ChatGUI extends JFrame {
 				String msg = editMsgTA.getText().trim();
 				messages.add(msg);
 				addLineMessage(msg);
-				client.sendMsg(msg);
+				client.getClientMsg().sendMsg(msg);
 				log.info("Action: " + action + " msg: " + msg);
 			}
 			if ( action.equals(ACTION_SEND_FILE) ) {
 				// отправка файла
-				client.sendFile();
+				client.getClientFile().sendFile();
 				log.info("Action: " + action);
 			}
 		}
 	}
 	
+	
 	/**
-	 * Класс клиента
+	 * Класс чата клиента
 	 */
-	private class ChatClient extends Thread {
+	private static class ClientChat {
+		// логин пользователя
+		private String userLogin = "";
+		
+		// сокеты и клиенты чатa
+	    private ClientMessage clientMsg;
+	    private ClientFile clientFile;
+	    
+	    private Socket socketFile;
+	    private Socket socketMsg;
+	    
+	    // ссылка на интерфейс чата
+	    private static ChatGUI chatGui;
+	    
+	    public ClientChat(final String login, final ChatGUI chat) {
+	    	try {
+	    		this.userLogin 	= login;
+	    		chatGui			= chat;
+	    		
+	    		this.socketMsg	= new Socket(HOST, PORT_MESSAGE);
+	    		this.socketFile = new Socket(HOST, PORT_FILE);
+	    		
+	    		this.clientMsg	= new ClientMessage(socketMsg);
+	    		this.clientFile	= new ClientFile(socketFile);
+	    		
+	    		this.clientMsg.start();
+	    		this.clientFile.start();
+	    	} catch(Exception e) {
+	    		e.printStackTrace();
+	    	}
+	    }
+	    
+	    public ClientMessage getClientMsg() {
+	    	return clientMsg;
+	    }
+	    
+	    public ClientFile getClientFile() {
+	    	return clientFile;
+	    }
+	    
+	    public String getUserLogin() {
+	    	return this.userLogin;
+	    }
+	    
+	    public void doEntrance() {
+			// вход в систему 
+	    	String msg = COMMAND_LOGIN + " " + userLogin;
+			clientMsg.sendMsg(msg);
+	 		
+	 		// загрузка данных (контакты)
+	 		clientMsg.sendMsg(COMMAND_USERLIST);
+		}
+	    
+	    public static ChatGUI getChatGUI() {
+	    	return chatGui;
+	    }
+	}
+	
+	/**
+	 * Класс клиента сообщений
+	 */
+	private static class ClientMessage extends Thread {
 		private PrintWriter out		= null;
 		private BufferedReader in 	= null;
 		private Socket skClient		= null;
-		public ChatClient(final Socket socket) {
-			try {
-				skClient	= socket;
-				out 		= new PrintWriter(socket.getOutputStream());
-				in			= new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+		public ClientMessage(final Socket socket) throws Exception {
+			skClient	= socket;
+			out 		= new PrintWriter(socket.getOutputStream());
+			in			= new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		}
 		
 		public void run() {
@@ -243,7 +290,7 @@ public class ChatGUI extends JFrame {
 	            		break;
 	            	}
 	            	// выводим пришедшее сообщение
-	            	addLineMessage(line);
+	            	ClientChat.getChatGUI().addLineMessage(line);
 	                System.out.println(">> " + line);
 	            }
 	        } catch (Exception e) {
@@ -262,6 +309,29 @@ public class ChatGUI extends JFrame {
 			log.info("Send message to server.");
 			out.println(msg);
 			out.flush();
+		}
+	}
+	
+	/**
+	 * Класс файлового клиента
+	 */
+	private static class ClientFile extends Thread {
+		private BufferedReader bReader 	= null;
+		private Socket skFile 			= null;
+		public ClientFile(final Socket socket) throws Exception {
+			this.skFile 	= socket;
+			this.bReader 	= new BufferedReader(new InputStreamReader(skFile.getInputStream())); 
+		}
+		
+		public void run() {
+			try {
+				String line = null;
+				while ( (line = bReader.readLine()) != null ) {
+					log.info("New file message");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		
 		/**
@@ -292,7 +362,7 @@ public class ChatGUI extends JFrame {
 				fReader 	= new FileInputStream(file);
 				
 				// запись файла
-				sWriter 	= new OutputStreamWriter(skClient.getOutputStream());
+				sWriter 	= new OutputStreamWriter(skFile.getOutputStream());
 				
 				// команда отправки файла
 				sWriter.write(COMMAND_FILE+"\n");
@@ -313,7 +383,7 @@ public class ChatGUI extends JFrame {
 				byte[] buffer = new byte[Long.valueOf(file.length()).intValue()];
 				int bytesRead = 0;
 				
-				oStream = skClient.getOutputStream();
+				oStream = skFile.getOutputStream();
 				
 				while ( (bytesRead = fReader.read(buffer)) > 0 ) {
 					// пока не дошли до конца файла - отправляем байты
@@ -330,27 +400,6 @@ public class ChatGUI extends JFrame {
 				//Util.closeResource(sWriter);
 				//Util.closeResource(oStream);
 			}
-		}
-		
-		/**
-		 * выполнить вход в систему
-		 */
-		public void doLogin(final String userLogin) {
-			String msg = COMMAND_LOGIN + " " + userLogin;
-			out.println(msg);
-			out.flush();
-		}
-		
-		public void getContacts() {
-			out.println(COMMAND_USERLIST);
-			out.flush();
-		}
-		
-		public void doEntrance() {
-			// вход 
-	 		doLogin(userLogin);
-	 		// загрузка данных (контакты)
-	 		getContacts();
 		}
 	}
 }
