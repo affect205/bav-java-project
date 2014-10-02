@@ -6,7 +6,7 @@ public class MyChat {
 			// запуск клиента 1
 			ChatGUI.startChat("AlexDiaz");
 			// запуск клиента 2
-			//ChatGUI.startChat("Nick");
+			ChatGUI.startChat("Nick");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -4,13 +4,17 @@
 package com.abalyschev.mychat;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -25,7 +29,10 @@ import org.slf4j.LoggerFactory;
 public class ChatThreadedServer {
 
     protected static Logger log = LoggerFactory.getLogger("ThreadedServer");
-    private static final int PORT = 19000;
+    private static final int PORT_MESSAGE			= 19000;
+    private static final int PORT_FILE_SENDING		= 19001;
+    private static final int PORT_FILE_RECEIVING	= 19002;
+    
     private static int counter = 0;
     
     // путь закачиваемых на сервер файлов
@@ -40,8 +47,7 @@ public class ChatThreadedServer {
     private static final String COMMAND_USERLIST	= ".userlist";
     private static final String COMMAND_EXIT 		= ".exit";
     
-    private static final String MESSAGE_NOT_LOGINED = "You are not logined!";
-    
+    private static final String MESSAGE_NOT_LOGINED 	= "You are not logined!";    
     private static final int USER_LIMIT = 10;
     
     private static Set<String> commands = new HashSet<String>(Arrays.asList(
@@ -66,15 +72,24 @@ public class ChatThreadedServer {
 
     public void startServer() throws Exception {
         log.info("Starting server...");
-        ServerSocket serverSocket = new ServerSocket(PORT);
+        ServerSocket srvMsgSocket			= new ServerSocket(PORT_MESSAGE);
+        ServerSocket srvFileReceivingSocket	= new ServerSocket(PORT_FILE_RECEIVING);
+        
+        // обработчик файлов
+        FileHandler srvFile	= new FileHandler(this);
+        
         while (true) {
 
             // блокируемся и ждем клиента
-            Socket socket = serverSocket.accept();
-            log.info("Client connected: " + socket.getInetAddress().toString() + ":" + socket.getPort());
-
-            // создаем обработчик
-            ClientHandler handler = new ClientHandler(this, socket, counter++);
+            Socket skMsgClient = srvMsgSocket.accept();
+            log.info("Client connected: " + skMsgClient.getInetAddress().toString() + ":" + skMsgClient.getPort());
+            
+            Socket skFileClient = srvFileReceivingSocket.accept();
+            log.info("File client connected: " + skFileClient.getInetAddress().toString() + ":" + skFileClient.getPort());
+              
+            // создаем обработчик сообщений
+            ClientHandler handler = new ClientHandler(this, skMsgClient, skFileClient, counter++);
+            
             // @TODO service.submit(handler);
             handlers.add(handler);
         }
@@ -83,7 +98,7 @@ public class ChatThreadedServer {
     /**
      * обработчик клиентских команд 
      */
-    protected String handleServerCommand(final ClientHandler handler, final String command, BufferedReader bReader) {
+    protected String handleServerCommand(final ClientHandler handler, final String command) {
     	String msg = "";
     	// парсинг параметров командной строки
     	String[] params = command.split("\\s+");
@@ -123,7 +138,7 @@ public class ChatThreadedServer {
     		msg = setPublicMode(handler);
     		
     	} else if ( COMMAND_SEND_FILE.equals(params[0]) ) {
-    		msg = doFileTransfer(handler, bReader);
+    		msg = doFileTransfer(handler);
     		
     	} else if ( COMMAND_USERLIST.equals(params[0]) ) {
     		msg = getLoginedUsers();
@@ -159,6 +174,23 @@ public class ChatThreadedServer {
     	}
     	users.deleteCharAt(users.lastIndexOf(";"));
     	return users.toString();
+    }
+    
+    /**
+     * Получение обработчика по имени
+     */
+    public ClientHandler getClientHandlerByName(final String name) {
+    	log.info("Get client handler by name: " + name);
+    	if ( name.equals("") ) {
+    		return null;
+    	}
+    	for ( ClientHandler client : handlers ) {
+    		log.info("Client: " + client.getClientName());
+    		if ( client.getClientName().equals(name) ) {
+    			return client;
+    		}
+    	}
+    	return null;
     }
     
     /**
@@ -228,11 +260,10 @@ public class ChatThreadedServer {
      * @param bReader
      * @return
      */
-    protected String doFileTransfer(final ClientHandler handler, BufferedReader bReader) {
+    protected String doFileTransfer(final ClientHandler handler) {
     	log.info("Do file transfer");
-    	FileOutputStream oStream = null;
-    	try {	
-    		// @TODO: рассмотреть эту идею
+//    	try {	
+//    		// @TODO: рассмотреть эту идею
 //    		BufferedInputStream in = new BufferedInputStream(handler.getInputStream());
 //    		try ( DataInputStream d = new DataInputStream(in) ) {
 //    			String fileName = d.readUTF();
@@ -241,77 +272,168 @@ public class ChatThreadedServer {
 //    			Files.copy(d, Paths.get(path));
 //    			d.close();
 //    		}
-    		// сохраняем файл на сервере
-        	String fileName = bReader.readLine();
-        	String fileSize	= bReader.readLine();
-        	int fSize = Long.valueOf(fileSize).intValue();
-        	
-        	// получаем имя и расширение файла
-			String[] fileArgs = fileName.split("\\.");
-			String fExt 	= ( fileArgs.length > 1 ) ? fileArgs[1] : "";
-			String fName 	= fileArgs[0];
-			
-			
-			log.info("Save file:");
-			log.info("Name:" + fileName);
-			log.info("Size:" + fSize);
-			log.info("Ext:"  + fExt);
-			
-			if ( fExt.equals("") ) {
-				return "error! something wrong with file";
-			}
-        	
-			File dir	= new File(PATH_UPLOAD + "/" + handler.getClientName());
-			if ( ! dir.exists() ) {
-				// нет директории - создадим
-				dir.mkdir();
-			}
-			
-			// сам файл
-			File file 	= new File(PATH_UPLOAD + "/" + handler.getClientName() + "/" + fileName);
-			if ( ! file.exists() ) {
-				// нет файла - создадим
-				file.createNewFile();
-			}
-			
-			oStream = new FileOutputStream(file);
-			byte[] buffer = new byte[fSize];
-			int bytesRead = 0;
-			
-			InputStream iStream = handler.getInputStream();			
-			if ( iStream == null ) {
-				return "error! something wrong with socket connection";
-			}
-			
-			while ( (bytesRead = iStream.read(buffer)) > 0 ) {
-				// пишем данные в файл
-				log.info("Bytes received: " + bytesRead);
-				oStream.write(buffer, 0, bytesRead);
-			}
-			
-        	// отправляем файл подписчикам
-			log.info("Send file to users");
-			
-    	} catch (IOException e) {
-    		e.printStackTrace();
-    	} catch (Exception e) {
-    		e.printStackTrace();
-    	} finally {
-    		Util.closeResource(oStream);
-    	}
     	return "file has sent";
     }
 
-    /*
-    Для каждого присоединившегося пользователя создается поток обработки независимый от остальных
+    /**
+     * Отправка файла
      */
+    public void sendFile(final String senderName, File file) {
+    	log.info("Send file to getters");
+		FileInputStream fReader 	= null;
+		OutputStreamWriter sWriter	= null;
+		OutputStream oStream		= null;
+		try {			
+			// открываем файл
+			if ( ! file.exists() ) {
+				log.info("No file to send: " + file.getName());
+				return;
+			}
+			
+			// получение отправителя
+			ClientHandler sender = getClientHandlerByName(senderName);
+			if ( sender == null ) {
+				// проблемы с отправителем - выходим
+				log.info("No sender to send file");
+				return;
+			}
+			
+			// отправитель найден - определим список получателей
+			List<String> getters = new ArrayList<String>();
+			if ( sender.isPrivateMode() ) {
+				// файл для приватной группы
+				getters = sender.getPrivateGroup();
+			} else {
+				// для всех, кроме отправителя
+				getters = getBroadcastList(senderName); 
+			}
+			
+			if ( getters.isEmpty() ) {
+				// отправлять некому - выходим
+				log.info("No file getters");
+				return;
+			}
+			
+			// параметры файла
+			String fileSender 	= senderName;
+			String fileName		= file.getName();
+			long fileSize		= file.length();
+			fReader				= new FileInputStream(file);
+			
+			// отправка файла
+			for ( String getter : getters ) {
+				// проходимся по списку получателей
+				ClientHandler handler = getClientHandlerByName(senderName);
+				if ( handler == null ) {
+					continue;
+				}
+				// отправка данных по файлу
+				sWriter	= new OutputStreamWriter(handler.getFileOutputStream());
+				sWriter.write(fileSender + "\n");
+				sWriter.flush();
+				sWriter.write(fileName + "\n");
+				sWriter.flush();
+				sWriter.write(String.valueOf(fileSize));
+				sWriter.flush();
+				
+				// отправка самого файла
+				Thread.sleep(200);
+				byte[] buffer 		= new byte[Long.valueOf(fileSize).intValue()];
+				int bytesRead	 	= 0;
+				oStream				= handler.getFileOutputStream();
+				
+				while ( (bytesRead = fReader.read(buffer)) > 0 ) {
+					// пишем данные в сокет
+					log.info("Bytes Read: " + bytesRead);
+					oStream.write(buffer, 0, bytesRead);
+					oStream.flush();
+				}
+				log.info("File to user ? has been sent", getter);
+				
+				// вернемся к началу файла
+				fReader.reset();
+				Util.closeResource(oStream);
+				Util.closeResource(sWriter);
+			}
+			/*
+			// получатель
+			ClientHandler getter = getClientHandlerByName("AlexDiaz");
+			fReader 	= new FileInputStream(file);
+			
+			// запись файла
+			sWriter 	= new OutputStreamWriter(getter.getFileOutputStream());
+			
+			// команда отправки файла
+			// sWriter.write(COMMAND_FILE+"\n");
+			// sWriter.flush();
+			
+			// имя отправителя
+			sWriter.write(sender + "\n");
+			sWriter.flush();
+			
+			// имя файла
+			sWriter.write(file.getName()+"\n");
+			sWriter.flush();
+			
+			// размер файла
+			sWriter.write(Long.toString(file.length())+"\n");
+			sWriter.flush();
+			
+			// подождем, пока дойдут данные
+			Thread.sleep(400);
+			
+			// отправка файла
+			byte[] buffer = new byte[Long.valueOf(file.length()).intValue()];
+			int bytesRead = 0;
+			
+			oStream = getter.getFileOutputStream();
+			
+			while ( (bytesRead = fReader.read(buffer)) > 0 ) {
+				// пока не дошли до конца файла - отправляем байты
+				log.info("Bytes received: " + bytesRead);
+				oStream.write(buffer, 0, bytesRead);
+				oStream.flush();
+			}
+			log.info("File to server has sent");
+			*/
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			Util.closeResource(fReader);
+			Util.closeResource(sWriter);
+			Util.closeResource(oStream);
+		}	
+    }
+    
+    /**
+     * Список пользователей для открытой переписки
+     */
+    public List<String> getBroadcastList(String senderName) {
+    	log.info("Get broadcast list");
+    	List<String> getters = new ArrayList<String>();
+    	for ( ClientHandler getter : handlers ) {
+    		if ( getter.isLogined() && !senderName.equals(getter.getClientName()) ) {
+    			// клиент залогирован и он не отправитель - добавляем в список
+    			log.info("Add client: ?", getter.getClientName());
+    			getters.add(getter.getClientName());
+    		}
+    	}
+    	return getters;
+    }
+    
+    // ---------------------------------------------INNER CLASS---------------------------------------
+    
+    /**
+     * Для каждого присоединившегося пользователя создается поток обработки независимый от остальных
+     */
+    private static class ClientHandler /*extends Thread*/ implements Runnable {
 
-    class ClientHandler /*extends Thread*/ implements Runnable {
-
-        private ChatThreadedServer server;
+        private final ChatThreadedServer server;
         private BufferedReader in;
         private PrintWriter out;
-        private Socket skClient;
+        private Socket skMsgClient;
+        private Socket skFileClient;
 
         // объект потока
         private Thread thread;
@@ -331,17 +453,30 @@ public class ChatThreadedServer {
         // режим личных сообщений
         private boolean privateMode = false;
         
+        // адрес клиента
+        private InetAddress addr;
+        
         // список получателей личных сообщений
         private List<String> privateGroup = new ArrayList<String>();
         
-        public ClientHandler(ChatThreadedServer server, Socket socket, int counter) throws Exception {
-        	thread	= new Thread(this);
-        	this.server	= server;
-            in 		= new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out 	= new PrintWriter(socket.getOutputStream());
-            number 	= counter;
-            skClient	= socket;
-            connection 	= true;
+        /**
+         * Конструктор обработчика
+         * @param server	- сслыка на сервер
+         * @param skMsg		- сокет текстовых сообщений
+         * @param skFile	- сокет файловых сообщений
+         * @param counter	- идентификатор клиента
+         * @throws Exception
+         */
+        public ClientHandler(ChatThreadedServer server, Socket skMsgClient, Socket skFileClient, int counter) throws Exception {
+        	this.thread			= new Thread(this);
+        	this.server			= server;
+            this.in 			= new BufferedReader(new InputStreamReader(skMsgClient.getInputStream()));
+            this.out 			= new PrintWriter(skMsgClient.getOutputStream());
+            this.number 		= counter;
+            this.skMsgClient	= skMsgClient;
+            this.addr			= skMsgClient.getInetAddress();
+            this.skFileClient	= skFileClient;
+            this.connection 	= true;
             
             thread.start();
         }
@@ -354,6 +489,13 @@ public class ChatThreadedServer {
         
         public int getNumber() {
         	return number;
+        }
+        
+        /**
+         * получение адреса клиента
+         */
+        public InetAddress getInetAddress() {
+        	return this.addr;
         }
         
         /**
@@ -420,29 +562,55 @@ public class ChatThreadedServer {
         }
         
         /**
-         * получение потока ввода для текущего сокета
+         * получение потока ввода для текстового сокета
          */
-        public final InputStream getInputStream() throws IOException {
-        	if ( skClient == null ) {
+        public final InputStream getMsgInputStream() throws IOException {
+        	if ( skMsgClient == null ) {
         		return null;
         	}
-        	if ( skClient.isClosed() ) {
+        	if ( skMsgClient.isClosed() ) {
         		return null;
         	}
-        	return this.skClient.getInputStream();
+        	return skMsgClient.getInputStream();
         }
         
         /**
-         * получение потока вывода для итекущего сокета
+         * получение потока вывода для текстового сокета
          */
-        public final OutputStream getOutputStream() throws IOException {
-        	if ( skClient == null ) {
+        public final OutputStream getMsgOutputStream() throws IOException {
+        	if ( skMsgClient == null ) {
         		return null;
         	}
-        	if ( skClient.isClosed() ) {
+        	if ( skMsgClient.isClosed() ) {
         		return null;
         	}
-        	return this.skClient.getOutputStream();
+        	return skMsgClient.getOutputStream();
+        }
+        
+        /**
+         * получение потока ввода для файлового сокета
+         */
+        public final InputStream getFileInputStream() throws IOException {
+        	if ( skFileClient == null ) {
+        		return null;
+        	}
+        	if ( skFileClient.isClosed() ) {
+        		return null;
+        	}
+        	return skFileClient.getInputStream();
+        }
+        
+        /**
+         * получение потока вывода для файлового сокета
+         */
+        public final OutputStream getFileOutputStream() throws IOException {
+        	if ( skFileClient == null ) {
+        		return null;
+        	}
+        	if ( skFileClient.isClosed() ) {
+        		return null;
+        	}
+        	return skFileClient.getOutputStream();
         }
         
         /**
@@ -469,7 +637,7 @@ public class ChatThreadedServer {
                 	log.info("Handler[" + number + "]<< " + line);
                     
                 	// проверка на наличие команды от пользователя
-                    String response = server.handleServerCommand(this, line, in);
+                    String response = server.handleServerCommand(this, line);
                     if ( ! response.equals("") ) {
                     	// получили команду - отправляем ответ от сервера
                     	send(getServerMessage(response));
@@ -540,5 +708,142 @@ public class ChatThreadedServer {
     		}
     	}
     	return null;
+    }
+    
+    // ---------------------------------------------INNER CLASS---------------------------------------
+    
+    private static class FileHandler implements Runnable {
+    	private ServerSocket srvFileSocket;
+    	private final ChatThreadedServer server;
+    	private Thread thread;
+    	
+    	/**
+    	 * Конструктор файлового сервера
+    	 * @param server 		- ссылка на сервер чата
+    	 * @param srvFileSocket	- серверный сокет
+    	 */
+    	public FileHandler(final ChatThreadedServer server) {
+    		this.thread			= new Thread(this);
+    		this.server			= server;
+    		try {
+        		this.srvFileSocket	= new ServerSocket(PORT_FILE_SENDING);
+    		} catch (IOException e) {
+    			e.printStackTrace();
+    		}
+    		thread.start();
+    	}
+    	
+    	public void run() {
+    		log.info("Do file transfer");
+    		while(true) {
+    	    	Socket socket				= null;
+    	    	FileOutputStream oStream 	= null;
+    	    	BufferedReader bReader		= null;
+    	    	try {	
+    	    		// подождем
+    	    		Thread.sleep(100);
+    	    		
+    	    		// получение клиентского сокета
+        			socket = srvFileSocket.accept();
+        			log.info("File client connected: " + socket.getInetAddress().toString() + ":" + socket.getPort());
+        			        			
+        			// буферезированное считывание входного потока
+        			bReader	= new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        			
+        			// сохраняем файл на сервере
+        			String fileSender	= bReader.readLine();
+        			if ( fileSender.equals("") ) {
+        				log.info("error! something wrong with file sender");
+        				continue;
+        			}
+    	        	String fileName 	= bReader.readLine();
+    	        	String fileSize		= bReader.readLine();
+    	        	
+    	        	int fSize = Long.valueOf(fileSize).intValue();
+    	        	if ( fSize <= 0 ) {
+    	        		log.info("No file to saving");
+    	        		Thread.sleep(500);
+    	        		continue;
+    	        	}
+    	        		
+    	        	// получаем имя и расширение файла
+    				String[] fileArgs = fileName.split("\\.");
+    				String fExt 	= ( fileArgs.length > 1 ) ? fileArgs[1] : "";
+    				String fName 	= fileArgs[0];
+    				
+    				// вывод данных
+    				log.info("Save file:");
+    				log.info("Sender: " + fileSender);
+    				log.info("Name:" + fileName);
+    				log.info("Size:" + fSize);
+    				log.info("Ext:"  + fExt);
+    				
+    				if ( fExt.equals("") ) {
+    					log.info("error! something wrong with file");
+    					closeResource(bReader, oStream, socket);
+    					continue;
+    				}
+    	        	
+    				// директория с файлом
+    				File dir	= new File(PATH_UPLOAD + "/" + fileSender);
+    				if ( ! dir.exists() ) {
+    					// нет директории - создадим
+    					dir.mkdir();
+    				}
+    				
+    				// сам файл
+    				File file 	= new File(PATH_UPLOAD + "/" + fileSender + "/" + fileName);
+    				if ( ! file.exists() ) {
+    					// нет файла - создадим
+    					file.createNewFile();
+    				}
+    				
+    				oStream = new FileOutputStream(file);
+    				byte[] buffer = new byte[fSize];
+    				int bytesRead = 0;
+    				
+    				InputStream iStream = socket.getInputStream();	
+    				//socket.shutdownInput();
+    				if ( iStream == null ) {
+    					log.info("error! something wrong with socket connection");
+    					closeResource(bReader, oStream, socket);
+    					continue;
+    				}
+    				
+    				while ( (bytesRead = iStream.read(buffer)) > 0 ) {
+    					// пишем данные в файл
+    					log.info("Bytes received: " + bytesRead);
+    					oStream.write(buffer, 0, bytesRead);
+    				}
+    				
+    	        	// отправляем файл подписчикам
+    				log.info("File has been saved");
+    				server.sendFile(fileSender, file);
+    				
+    				// закрываем ресурсы
+    				closeResource(bReader, oStream, socket);
+    				
+    	    	} catch (InterruptedException e) {
+    	    		log.info("Close file server");
+    	    		return;
+    	    	} catch (IOException e) {
+    	    		e.printStackTrace();
+    	    	} catch (Exception e) {
+    	    		e.printStackTrace();
+    	    	} finally {
+    	    		Util.closeResource(oStream);
+    	    		Util.closeResource(bReader);
+    	    	}    			
+    		}
+    	}
+    	
+    	/**
+    	 * закрываем присланные ресурсы
+    	 */
+    	private void closeResource(Closeable...objects) {
+    		for ( Closeable obj : objects ) {
+    			Util.closeResource(obj);
+    		}
+    	}
     }
 }
