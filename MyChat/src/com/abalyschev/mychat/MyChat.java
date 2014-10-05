@@ -6,7 +6,9 @@ public class MyChat {
 			// запуск клиента 1
 			ChatGUI.startChat("AlexDiaz");
 			// запуск клиента 2
-			ChatGUI.startChat("Nick");
+			// ChatGUI.startChat("Nick");
+			// запуск клиента 3
+			// ChatGUI.startChat("Piter");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

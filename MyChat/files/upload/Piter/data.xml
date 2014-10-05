@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<countries>
+	<country name="Russia" population="143666000" capital="Moscow">
+		<city population="12108000" foundation="1147">Moscow</city>
+		<city population="5131000" foundation="1703">St. Petersburg</city>
+		<city population="1190000" foundation="1005">Kazan</city>
+		<city population="330000" foundation="863">Smolensk</city>
+		<city population="805000" foundation="1793">Kransnodar</city>
+	</country>
+	<country name="USA" population="320194000" capital="Washington">
+		<city population="601000" foundation="1790">Washington</city>
+		<city population="8336000" foundation="1653">New York</city>
+		<city population="625087" foundation="1630">Boston</city>
+		<city population="2714000" foundation="1795">Chicago</city>
+		<city population="3792000" foundation="1781">Los Angeles</city>
+	</country>
+	<country name="Greate Britain" population="63395000" capital="London">
+		<city population="8416000" foundation="43">London</city>		
+		<city population="441000" foundation="1190">Liverpool</city>		
+		<city population="551000" foundation="743">Sheffield</city>
+		<city population="757000" foundation="1893">Leeds</city>
+		<city population="129000" foundation="1158">Norwich</city>
+	</country>
+</countries>

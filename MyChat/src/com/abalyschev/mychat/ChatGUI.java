@@ -8,6 +8,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,6 +23,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -52,7 +55,7 @@ public class ChatGUI extends JFrame {
 	
     public static final String HOST = "localhost";
     
-    // команды сервера
+    // команды клиента - сервера
     private static final String COMMAND_EXIT		= ".exit";
     private static final String COMMAND_LOGIN 		= ".login";
     private static final String COMMAND_USERLIST 	= ".userlist";
@@ -67,18 +70,26 @@ public class ChatGUI extends JFrame {
 	private JButton sendMsgBtn;
 	
 	private JPanel contactPnl;
-	private JLabel contactLb;
 	private JList contactLst;
+	private static final String[] DEFAULT_CONTACTS 		= { "Contacts:", "", "", "", "", "", "", "", "", "" }; 
+	private static final String MESSAGE_EMPTY_CONTACTS	= "system:  no users in chat";
+	private List<String> contacts;
 	
 	private JPanel actionPnl;
 	private JLabel actionLb;
 	private JButton fileBtn;
+	
+	private JPanel infoPnl;
+	private JLabel loginLb;
 	
 	// список сообщения
 	private List<String> messages;
 	
 	// обработчик нажатия кнопки
 	private static ActionListener actionListener;
+	
+	// обработчик нажатия лавиш
+	private static KeyListener keyListener;
 	
 	// клиент чата
 	private static ClientChat client;
@@ -101,10 +112,18 @@ public class ChatGUI extends JFrame {
 		
 		// инициализация окна
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	    setSize(400, 400);
+	    setSize(700, 400);
 	    setLayout(new BorderLayout());
 	    
+	    // логин пользователя
+	    ChatGUI.setUserLogin(login);
+	    
+	    // список сообщений
 	    messages = new ArrayList<String>();
+	    
+	    // список контактов
+	    contacts = new ArrayList<String>();
+	    contacts.addAll(Arrays.asList(DEFAULT_CONTACTS));
 	    
 	    // инициализация элементов управления
 	    initControls();
@@ -114,9 +133,7 @@ public class ChatGUI extends JFrame {
 	    add(actionPnl, 	BorderLayout.EAST);
 	    add(viewMsgPnl, BorderLayout.CENTER);
 	    add(sendMsgPnl, BorderLayout.SOUTH); 
-	    
-	    // логин пользователя
-	    ChatGUI.setUserLogin(login);
+	    add(infoPnl,	BorderLayout.NORTH);
 	    
 	    // запуск клиента
 	    client = new ClientChat(this);
@@ -130,7 +147,8 @@ public class ChatGUI extends JFrame {
 	 */
 	private void initControls() {
 		// обработчики событий
-		actionListener = new ButtonListener();
+		actionListener 	= new ButtonListener();
+		keyListener		= new TAListener();
 		
 		// панель просмотра сообщения
 	    viewMsgPnl	= new JPanel();
@@ -138,7 +156,8 @@ public class ChatGUI extends JFrame {
 	    viewMsgPnl.setBorder(BorderFactory.createLineBorder(Color.black));
 	    
 	    lineMsgTA	= new JTextArea(10, 30);
-	    lineMsgTA.setEditable(false);
+	    lineMsgTA.setEditable(false);	
+	    lineMsgTA.setWrapStyleWord(true);
 	    viewMsgPnl.add(lineMsgTA);
 	    
 	    // панель отправки сообщения
@@ -147,6 +166,7 @@ public class ChatGUI extends JFrame {
 	    sendMsgPnl.setBorder(BorderFactory.createLineBorder(Color.black));
 	    
 	    editMsgTA	= new JTextArea(10, 30);
+	    editMsgTA.addKeyListener(keyListener);
 	    sendMsgBtn	= new JButton("Enter");
 	    sendMsgBtn.setActionCommand(ACTION_SEND_MESSAGE);
 	    sendMsgBtn.addActionListener(actionListener);
@@ -156,36 +176,44 @@ public class ChatGUI extends JFrame {
 	    
 	    // панель контактов
 	    contactPnl = new JPanel();
-	    contactPnl.setPreferredSize(new Dimension(100, 400));
+	    contactPnl.setPreferredSize(new Dimension(140, 400));
 	    contactPnl.setLayout(new BoxLayout(contactPnl, BoxLayout.Y_AXIS));
 
-	    contactLb	= new JLabel("Contacts");
-	    //contactLb.setHorizontalAlignment(JLabel.RIGHT);
-	    contactLst	= new JList(new String[] { "Alex", "Nick", "Clave", "Sarah", "Helen" });
+	    contactLst	= new JList(contacts.toArray());
 	    contactLst.setBorder(BorderFactory.createLineBorder(Color.gray));
 	    contactLst.setAutoscrolls(true);
-	    contactLst.setPrototypeCellValue("11111111111");
-	    contactLst.setPreferredSize(new Dimension(100, 120));
+	    contactLst.setPrototypeCellValue(".................................");
+	    contactLst.setSize(120, 120);
 	    
-	    
-	    contactPnl.add(contactLb);
 	    contactPnl.add(contactLst);
 	    
 	    // панель действий
 	    actionPnl	= new JPanel();
-	    actionPnl.setPreferredSize(new Dimension(100, 400));
+	    actionPnl.setPreferredSize(new Dimension(80, 400));
 	    actionPnl.setLayout(new BoxLayout(actionPnl, BoxLayout.Y_AXIS));
 	    
 	    actionLb	= new JLabel("Actions");
+	    actionLb.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 10));
 	    fileBtn		= new JButton("Send File");
 	    fileBtn.setActionCommand(ACTION_SEND_FILE);
 	    fileBtn.addActionListener(actionListener);
 	    
 	    actionPnl.add(actionLb);
 	    actionPnl.add(fileBtn);
+	    
+	    // панель состояния
+	    infoPnl		= new JPanel();
+	    infoPnl.setLayout(new BoxLayout(infoPnl, BoxLayout.X_AXIS));
+	    infoPnl.setPreferredSize(new Dimension(400, 40));
+	    
+	    loginLb		= new JLabel(getLogin() + ":", JLabel.RIGHT);
+	    loginLb.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 10));
+	    
+	    infoPnl.add(loginLb);
+	    
 	}
 	
-	protected static String getUserLogin() {
+	protected static String getLogin() {
 		if ( userLogin.equals("") ) {
 			return LOGIN_UNKNOWN;
 		}
@@ -196,18 +224,86 @@ public class ChatGUI extends JFrame {
 		userLogin = login;
 	}
 	
+	/**
+	 * Добавление сообщение в поле сообщения
+	 * @param msg
+	 */
 	protected void addLineMessage(final String msg) {
 		String text = lineMsgTA.getText();
-		String line = "\n" + getNowStr() + " (" + getUserLogin() + "): " + msg + "\n";
-		text += line;
+		String line = msg + "\n";
+		text += getNowStr() + "  -  " + line;
 		lineMsgTA.setText(text);
 	}
 	
+	protected String getNamingMessage(final String msg) {
+		return ChatGUI.getLogin() + ":  " + msg;
+	}
+	
+	/**
+	 * Получение строки с текущим временем
+	 */
 	protected String getNowStr() {
 		SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm:ss");
 		return dateFormat.format(new Date());
 	}
 	
+	/**
+	 * Проверка на наличие доступных пользователей в списке контактов
+	 */
+	protected boolean isEmptyContacts() {
+		for ( String str : contacts ) {
+			if ( ! str.equals("") ) {
+				return false; 
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * Добавление контакта/контактов
+	 */
+	protected void addContact(String contact) {
+		log.info("Contact list: " + contact);
+		String[] params = contact.split(COMMAND_USERLIST + ":");
+		if ( params.length < 2 ) {
+			return;
+		}
+		String[] values	= params[1].split(";");
+		for ( int i=0; i < values.length; ++i ) {
+			int ndx = -1;
+			if ( (ndx = contacts.indexOf("")) != -1) {
+				contacts.add(ndx, values[i]);
+			} else {
+				contacts.add(values[i]);
+			}
+		}
+		// обновляем список контактов
+		contactLst.setListData(contacts.toArray());
+	}
+	
+	// ----------------------------------INNER CLASS----------------------------------
+	
+	private class TAListener implements KeyListener {
+		@Override
+		public void keyPressed(KeyEvent e) {
+			switch(e.getKeyCode()) {
+				case KeyEvent.VK_ENTER:
+					e.consume();
+					sendMsgBtn.doClick();
+			}
+		}
+		@Override
+		public void keyTyped(KeyEvent e) {
+			
+		}
+		@Override
+		public void keyReleased(KeyEvent e) {
+			
+		}
+	}
+	
+	
+	// ----------------------------------INNER CLASS----------------------------------
 	
 	private class ButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent event) {
@@ -216,9 +312,15 @@ public class ChatGUI extends JFrame {
 				// отправка сообщения
 				String msg = editMsgTA.getText().trim();
 				messages.add(msg);
-				addLineMessage(msg);
-				client.getClientMsg().sendMsg(msg);
-				log.info("Action: " + action + " msg: " + msg);
+				addLineMessage(getNamingMessage(msg));
+				log.info("Message - " + msg);
+				if ( isEmptyContacts() ) {
+					// чат пуст - предупредим
+					addLineMessage(MESSAGE_EMPTY_CONTACTS);
+				} else {
+					// иначе - отправляем сообщение на сервер
+					client.getClientMsg().sendMsg(msg);
+				}
 			}
 			if ( action.equals(ACTION_SEND_FILE) ) {
 				// отправка файла
@@ -228,6 +330,7 @@ public class ChatGUI extends JFrame {
 		}
 	}
 	
+	// ----------------------------------INNER CLASS----------------------------------
 	
 	/**
 	 * Класс чата клиента
@@ -280,6 +383,8 @@ public class ChatGUI extends JFrame {
 	    }
 	}
 	
+	// ----------------------------------INNER CLASS----------------------------------
+	
 	/**
 	 * Класс клиента сообщений
 	 */
@@ -300,6 +405,11 @@ public class ChatGUI extends JFrame {
 	            	if ( line.equals(COMMAND_EXIT) ) {
 	            		log.info("Closing programm");
 	            		break;
+	            	}
+	            	if ( line.contains(COMMAND_USERLIST) ) {
+	            		log.info("New contact in chat");
+	            		// обновляем контакты
+	            		ClientChat.getChatGUI().addContact(line);
 	            	}
 	            	// выводим пришедшее сообщение
 	            	ClientChat.getChatGUI().addLineMessage(line);
@@ -323,6 +433,8 @@ public class ChatGUI extends JFrame {
 			out.flush();
 		}
 	}
+	
+	// ----------------------------------INNER CLASS----------------------------------
 	
 	/**
 	 * Класс файлового клиента
@@ -349,13 +461,13 @@ public class ChatGUI extends JFrame {
 						params.add(cnt++, line);
 						if ( cnt == 3 ) {
 							// данные по файлу получены - сохраняем файл
-							File dir	= new File(PATH_DOWNLOADS + "/" + ChatGUI.getUserLogin());
+							File dir	= new File(PATH_DOWNLOADS + "/" + ChatGUI.getLogin());
 		    				if ( ! dir.exists() ) {
 		    					// нет директории - создадим
 		    					dir.mkdir();
 		    				}
 							
-		    				File file	= new File(PATH_DOWNLOADS + "/" + ChatGUI.getUserLogin() + "/" + params.get(1));
+		    				File file	= new File(PATH_DOWNLOADS + "/" + ChatGUI.getLogin() + "/" + params.get(1));
 							if ( ! file.exists() ) {
 								file.createNewFile();
 							}
@@ -381,6 +493,7 @@ public class ChatGUI extends JFrame {
 				e.printStackTrace();
 			} finally {
 				Util.closeResource(skFileReceive);
+				Util.closeResource(bReader);
 			}
 		}
 		
@@ -423,7 +536,7 @@ public class ChatGUI extends JFrame {
 				// sWriter.flush();
 				
 				// имя отправителя
-				sWriter.write(ChatGUI.getUserLogin() + "\n");
+				sWriter.write(ChatGUI.getLogin() + "\n");
 				sWriter.flush();
 				
 				// имя файла
