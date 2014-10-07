@@ -30,11 +30,13 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,8 +45,10 @@ public class ChatGUI extends JFrame {
 	
 	private static Logger log = LoggerFactory.getLogger(ChatGUI.class);
 	
-	private static String ACTION_SEND_MESSAGE	= "send_message";
-	private static String ACTION_SEND_FILE 		= "send_file";
+	private static String ACTION_SEND_MESSAGE	= "sm";
+	private static String ACTION_SEND_FILE 		= "sf";
+	private static String ACTION_OPEN_FILE 		= "of";
+	
 	
 	public static final String PATH_DOWNLOADS	= "files/downloads";
 	
@@ -77,10 +81,15 @@ public class ChatGUI extends JFrame {
 	
 	private JPanel actionPnl;
 	private JLabel actionLb;
-	private JButton fileBtn;
+	private JTextField filePathTxt;
+	private JButton fileOpenBtn;
+	private JButton fileSendBtn;
 	
 	private JPanel infoPnl;
 	private JLabel loginLb;
+	
+	// выбор файла
+	JFileChooser fChooser;
 	
 	// список сообщения
 	private List<String> messages;
@@ -194,12 +203,22 @@ public class ChatGUI extends JFrame {
 	    
 	    actionLb	= new JLabel("Actions");
 	    actionLb.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 10));
-	    fileBtn		= new JButton("Send File");
-	    fileBtn.setActionCommand(ACTION_SEND_FILE);
-	    fileBtn.addActionListener(actionListener);
+	    fileSendBtn	= new JButton("Send File");
+	    fileSendBtn.setActionCommand(ACTION_SEND_FILE);
+	    fileSendBtn.addActionListener(actionListener);
+	    
+	    filePathTxt	= new JTextField();
+	    fileOpenBtn	= new JButton("...");
+	    fileOpenBtn.setActionCommand(ACTION_OPEN_FILE);
+	    fileOpenBtn.addActionListener(actionListener);
+	    
+	    // диалог выбора файла
+	    fChooser		= new JFileChooser();
 	    
 	    actionPnl.add(actionLb);
-	    actionPnl.add(fileBtn);
+	    actionPnl.add(fileOpenBtn);
+	    actionPnl.add(filePathTxt);
+	    actionPnl.add(fileSendBtn);
 	    
 	    // панель состояния
 	    infoPnl		= new JPanel();
@@ -325,7 +344,18 @@ public class ChatGUI extends JFrame {
 			if ( action.equals(ACTION_SEND_FILE) ) {
 				// отправка файла
 				client.getClientFile().sendFile();
-				log.info("Action: " + action);
+			}
+			if ( action.equals(ACTION_OPEN_FILE) ) {
+				// открытие файла
+				int value = fChooser.showOpenDialog(ChatGUI.this);
+				
+				switch(value) {
+					case JFileChooser.APPROVE_OPTION:
+						// получение выбранного файла
+						File file = fChooser.getSelectedFile();
+						filePathTxt.setText(file.getAbsolutePath());
+				}
+				
 			}
 		}
 	}
