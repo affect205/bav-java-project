@@ -28,7 +28,9 @@ import java.util.Date;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -36,7 +38,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
+import javax.swing.border.TitledBorder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +50,7 @@ public class ChatGUI extends JFrame {
 	private static String ACTION_SEND_MESSAGE	= "sm";
 	private static String ACTION_SEND_FILE 		= "sf";
 	private static String ACTION_OPEN_FILE 		= "of";
+	private static String ACTION_CLEAR_MESSAGE 	= "cm";
 	
 	
 	public static final String PATH_DOWNLOADS	= "files/downloads";
@@ -72,16 +75,15 @@ public class ChatGUI extends JFrame {
 	private JPanel sendMsgPnl;
 	private JTextArea editMsgTA;
 	private JButton sendMsgBtn;
+	private JButton clearMsgBtn;
 	
 	private JPanel contactPnl;
 	private JList contactLst;
-	private static final String[] DEFAULT_CONTACTS 		= { "Contacts:", "", "", "", "", "", "", "", "", "" }; 
+	private static final String[] DEFAULT_CONTACTS 		= { "Friends:", "", "", "", "", "", "", "", "", "" }; 
 	private static final String MESSAGE_EMPTY_CONTACTS	= "system:  no users in chat";
 	private List<String> contacts;
 	
 	private JPanel actionPnl;
-	private JLabel actionLb;
-	private JTextField filePathTxt;
 	private JButton fileOpenBtn;
 	private JButton fileSendBtn;
 	
@@ -89,9 +91,11 @@ public class ChatGUI extends JFrame {
 	private JLabel loginLb;
 	
 	// выбор файла
-	JFileChooser fChooser;
+	private JFileChooser fChooser;
+	// прикрепленный файл
+	private static File attachedFile;
 	
-	// список сообщения
+	// список сообщений
 	private List<String> messages;
 	
 	// обработчик нажатия кнопки
@@ -122,7 +126,10 @@ public class ChatGUI extends JFrame {
 		// инициализация окна
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	    setSize(700, 400);
-	    setLayout(new BorderLayout());
+	    BorderLayout appLt = new BorderLayout();
+	    appLt.setHgap(10);
+	    appLt.setVgap(10);
+	    setLayout(appLt);
 	    
 	    // логин пользователя
 	    ChatGUI.setUserLogin(login);
@@ -133,6 +140,9 @@ public class ChatGUI extends JFrame {
 	    // список контактов
 	    contacts = new ArrayList<String>();
 	    contacts.addAll(Arrays.asList(DEFAULT_CONTACTS));
+	    
+	    // инициализация данных приложения
+	    attachedFile = new File("");
 	    
 	    // инициализация элементов управления
 	    initControls();
@@ -147,7 +157,7 @@ public class ChatGUI extends JFrame {
 	    // запуск клиента
 	    client = new ClientChat(this);
 	 		
-	    // выполним инициализацию
+	    // выполним инициализацию клиента
 	 	client.doEntrance();
 	}
 		
@@ -166,29 +176,42 @@ public class ChatGUI extends JFrame {
 	    
 	    lineMsgTA	= new JTextArea(10, 30);
 	    lineMsgTA.setEditable(false);	
-	    lineMsgTA.setWrapStyleWord(true);
+	    lineMsgTA.setLineWrap(true);
 	    viewMsgPnl.add(lineMsgTA);
 	    
 	    // панель отправки сообщения
 	    sendMsgPnl 	= new JPanel();
 	    sendMsgPnl.setLayout(new BoxLayout(sendMsgPnl, BoxLayout.X_AXIS));
-	    sendMsgPnl.setBorder(BorderFactory.createLineBorder(Color.black));
+	    sendMsgPnl.setBorder(BorderFactory.createTitledBorder("Messaging"));
 	    
 	    editMsgTA	= new JTextArea(10, 30);
 	    editMsgTA.addKeyListener(keyListener);
+	    editMsgTA.setLineWrap(true);
 	    sendMsgBtn	= new JButton("Enter");
 	    sendMsgBtn.setActionCommand(ACTION_SEND_MESSAGE);
 	    sendMsgBtn.addActionListener(actionListener);
+	    clearMsgBtn	= new JButton("Clear");
+	    clearMsgBtn.setActionCommand(ACTION_CLEAR_MESSAGE);
+	    clearMsgBtn.addActionListener(actionListener);
+	    
+	    JPanel sendCmdPnl = new JPanel();
+	    sendCmdPnl.setLayout(new BoxLayout(sendCmdPnl, BoxLayout.Y_AXIS));
+	    sendCmdPnl.add(sendMsgBtn);
+	    sendCmdPnl.add(Box.createVerticalStrut(10));
+	    sendCmdPnl.add(clearMsgBtn);
 	    
 	    sendMsgPnl.add(editMsgTA);
-	    sendMsgPnl.add(sendMsgBtn);
+	    sendMsgPnl.add(sendCmdPnl);
 	    
 	    // панель контактов
 	    contactPnl = new JPanel();
 	    contactPnl.setPreferredSize(new Dimension(140, 400));
+	    TitledBorder title = BorderFactory.createTitledBorder("Contatcs");
+	    title.setTitlePosition(TitledBorder.DEFAULT_POSITION);
+	    contactPnl.setBorder(title);
 	    contactPnl.setLayout(new BoxLayout(contactPnl, BoxLayout.Y_AXIS));
 
-	    contactLst	= new JList(contacts.toArray());
+	    contactLst	= new JList(contacts.toArray());	    		
 	    contactLst.setBorder(BorderFactory.createLineBorder(Color.gray));
 	    contactLst.setAutoscrolls(true);
 	    contactLst.setPrototypeCellValue(".................................");
@@ -198,34 +221,37 @@ public class ChatGUI extends JFrame {
 	    
 	    // панель действий
 	    actionPnl	= new JPanel();
-	    actionPnl.setPreferredSize(new Dimension(80, 400));
+	    actionPnl.setPreferredSize(new Dimension(120, 400));
 	    actionPnl.setLayout(new BoxLayout(actionPnl, BoxLayout.Y_AXIS));
-	    
-	    actionLb	= new JLabel("Actions");
-	    actionLb.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 10));
-	    fileSendBtn	= new JButton("Send File");
+	    actionPnl.setBorder(BorderFactory.createTitledBorder("Actions"));
+
+	    fileSendBtn	= new JButton(new ImageIcon("files/img/enter-16.png"));
 	    fileSendBtn.setActionCommand(ACTION_SEND_FILE);
 	    fileSendBtn.addActionListener(actionListener);
+	    fileSendBtn.setToolTipText("Send File");
 	    
-	    filePathTxt	= new JTextField();
 	    fileOpenBtn	= new JButton("...");
 	    fileOpenBtn.setActionCommand(ACTION_OPEN_FILE);
 	    fileOpenBtn.addActionListener(actionListener);
 	    
+	    JPanel fileSendPnl = new JPanel();
+	    fileSendPnl.setLayout(new BoxLayout(fileSendPnl, BoxLayout.X_AXIS));
+	    fileSendPnl.add(fileOpenBtn);
+	    fileSendPnl.add(Box.createHorizontalStrut(10));
+	    fileSendPnl.add(fileSendBtn);
+	    
 	    // диалог выбора файла
 	    fChooser		= new JFileChooser();
 	    
-	    actionPnl.add(actionLb);
-	    actionPnl.add(fileOpenBtn);
-	    actionPnl.add(filePathTxt);
-	    actionPnl.add(fileSendBtn);
+	    actionPnl.add(fileSendPnl);
 	    
 	    // панель состояния
 	    infoPnl		= new JPanel();
 	    infoPnl.setLayout(new BoxLayout(infoPnl, BoxLayout.X_AXIS));
-	    infoPnl.setPreferredSize(new Dimension(400, 40));
+	    infoPnl.setPreferredSize(new Dimension(400, 60));
+	    infoPnl.setBorder(BorderFactory.createTitledBorder("User"));
 	    
-	    loginLb		= new JLabel(getLogin() + ":", JLabel.RIGHT);
+	    loginLb		= new JLabel(getLogin(), new ImageIcon("files/img/user-32.png"), JLabel.LEFT);
 	    loginLb.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 10));
 	    
 	    infoPnl.add(loginLb);
@@ -241,6 +267,24 @@ public class ChatGUI extends JFrame {
 	
 	protected static void setUserLogin(String login) {
 		userLogin = login;
+	}
+	
+	/**
+	 * Установка прикрепленного файла
+	 */
+	protected void setAttachedFile(final File file) {
+		if ( file == null || ! file.exists() ) {
+			return;
+		}
+		attachedFile = file;
+		fileOpenBtn.setToolTipText(file.getAbsolutePath());
+	}
+	
+	/**
+	 * Получение прикрепленного файла
+	 */
+	protected static File getAttachedFile() {
+		return attachedFile;
 	}
 	
 	/**
@@ -341,19 +385,26 @@ public class ChatGUI extends JFrame {
 					client.getClientMsg().sendMsg(msg);
 				}
 			}
+			
+			if ( action.endsWith(ACTION_CLEAR_MESSAGE) ) {
+				// очистка поля сообщения
+				ChatGUI.this.editMsgTA.setText("");
+			}
+			
 			if ( action.equals(ACTION_SEND_FILE) ) {
 				// отправка файла
 				client.getClientFile().sendFile();
 			}
+			
 			if ( action.equals(ACTION_OPEN_FILE) ) {
 				// открытие файла
 				int value = fChooser.showOpenDialog(ChatGUI.this);
 				
 				switch(value) {
 					case JFileChooser.APPROVE_OPTION:
-						// получение выбранного файла
+						// получение прикрепленного файла
 						File file = fChooser.getSelectedFile();
-						filePathTxt.setText(file.getAbsolutePath());
+						ChatGUI.this.setAttachedFile(file);
 				}
 				
 			}
@@ -547,13 +598,15 @@ public class ChatGUI extends JFrame {
 //					d.close();
 //				}
 				
-				// открываем файл
-				String fileName	= "files/data.xml";
-				File file		= new File(fileName);
+				// получаем файл
+				File file		= ChatGUI.getAttachedFile();
+				String fileName = file.getName();
 				if ( ! file.exists() ) {
 					log.info("No file to send: " + fileName);
+					return;
 				}
-				fReader 	= new FileInputStream(file);
+				// ридер файла
+				fReader = new FileInputStream(file);
 				
 				// открываем сокет
 				skFile	= new Socket(HOST, PORT_FILE_SENDING);
