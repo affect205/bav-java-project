@@ -38,6 +38,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import javax.swing.JToggleButton;
 import javax.swing.border.TitledBorder;
 
 import org.slf4j.Logger;
@@ -51,6 +52,8 @@ public class ChatGUI extends JFrame {
 	private static String ACTION_SEND_FILE 		= "sf";
 	private static String ACTION_OPEN_FILE 		= "of";
 	private static String ACTION_CLEAR_MESSAGE 	= "cm";
+	private static String ACTION_SHOW_PAINTER 	= "sp";
+	private static String ACTION_HIDE_PAINTER 	= "hp";
 	
 	
 	public static final String PATH_DOWNLOADS	= "files/downloads";
@@ -86,6 +89,7 @@ public class ChatGUI extends JFrame {
 	private JPanel actionPnl;
 	private JButton fileOpenBtn;
 	private JButton fileSendBtn;
+	private JToggleButton painterOpenBtn;
 	
 	private JPanel infoPnl;
 	private JLabel loginLb;
@@ -107,6 +111,9 @@ public class ChatGUI extends JFrame {
 	// клиент чата
 	private static ClientChat client;
 	
+	// дочернее окно: доска для рисования
+	private static JFrame paintDeskFrm;
+	
 	// логин пользователя
 	private static final String LOGIN_UNKNOWN = "unknown";
 	private static String userLogin = LOGIN_UNKNOWN;
@@ -116,6 +123,9 @@ public class ChatGUI extends JFrame {
 	        public void run() {
 	        	javax.swing.JFrame frame = new ChatGUI(login);
 	    	    frame.setVisible(true);
+	    	    
+	    	    paintDeskFrm = new PaintFrame();
+            	paintDeskFrm.setVisible(false);
 	        }
 	    });
 	}
@@ -225,6 +235,7 @@ public class ChatGUI extends JFrame {
 	    actionPnl.setLayout(new BoxLayout(actionPnl, BoxLayout.Y_AXIS));
 	    actionPnl.setBorder(BorderFactory.createTitledBorder("Actions"));
 
+	    // пересылка файла
 	    fileSendBtn	= new JButton(new ImageIcon("files/img/enter-16.png"));
 	    fileSendBtn.setActionCommand(ACTION_SEND_FILE);
 	    fileSendBtn.addActionListener(actionListener);
@@ -240,10 +251,23 @@ public class ChatGUI extends JFrame {
 	    fileSendPnl.add(Box.createHorizontalStrut(10));
 	    fileSendPnl.add(fileSendBtn);
 	    
+	    // доска для рисования
+	    JPanel painterOpenPnl = new JPanel();
+	    painterOpenPnl.setLayout(new BoxLayout(painterOpenPnl, BoxLayout.X_AXIS));
+	    
+	    painterOpenBtn	= new JToggleButton("Painter");
+	    painterOpenBtn.setToolTipText("Show paint desk");
+	    painterOpenBtn.setActionCommand(ACTION_SHOW_PAINTER);
+	    painterOpenBtn.addActionListener(actionListener);
+	    
+	    painterOpenPnl.add(painterOpenBtn);
+	    
 	    // диалог выбора файла
 	    fChooser		= new JFileChooser();
 	    
 	    actionPnl.add(fileSendPnl);
+	    actionPnl.add(painterOpenPnl);
+	    
 	    
 	    // панель состояния
 	    infoPnl		= new JPanel();
@@ -406,6 +430,19 @@ public class ChatGUI extends JFrame {
 						File file = fChooser.getSelectedFile();
 						ChatGUI.this.setAttachedFile(file);
 				}
+			}
+			
+			if ( action.equals(ACTION_SHOW_PAINTER) ) {
+				// открываем доску для рисования
+				if ( ChatGUI.this.painterOpenBtn.isSelected() ) {
+					// показываем доску
+					log.info("Open paint desk");
+					paintDeskFrm.setVisible(true);
+				} else {
+					// скрываем доску
+					log.info("Hide paint desk");
+					paintDeskFrm.setVisible(false);
+				}
 				
 			}
 		}
@@ -510,6 +547,7 @@ public class ChatGUI extends JFrame {
 		 */
 		public void sendMsg(final String msg) {
 			log.info("Send message to server.");
+			log.info(msg);
 			out.println(msg);
 			out.flush();
 		}
