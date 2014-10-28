@@ -32,6 +32,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -52,8 +53,8 @@ public class ChatGUI extends JFrame {
 	private static String ACTION_SEND_FILE 		= "sf";
 	private static String ACTION_OPEN_FILE 		= "of";
 	private static String ACTION_CLEAR_MESSAGE 	= "cm";
-	private static String ACTION_SHOW_PAINTER 	= "sp";
-	private static String ACTION_HIDE_PAINTER 	= "hp";
+	private static String ACTION_SHARE_PAINTER 	= "sp";
+	private static String ACTION_GET_PAINTER 	= "gp";
 	
 	
 	public static final String PATH_DOWNLOADS	= "files/downloads";
@@ -70,6 +71,8 @@ public class ChatGUI extends JFrame {
     private static final String COMMAND_LOGIN 		= ".login";
     private static final String COMMAND_USERLIST 	= ".userlist";
     private static final String COMMAND_FILE 		= ".file";
+    private static final String COMMAND_DESK_ON		= ".deskon";
+    private static final String COMMAND_DESK_OFF	= ".deskoff";
     	
 	// элементы управления
 	private JPanel viewMsgPnl;
@@ -89,7 +92,9 @@ public class ChatGUI extends JFrame {
 	private JPanel actionPnl;
 	private JButton fileOpenBtn;
 	private JButton fileSendBtn;
-	private JToggleButton painterOpenBtn;
+	private JToggleButton painterShareTgl;
+	private JButton painterGetBtn;
+	private JComboBox painterSelectCb;
 	
 	private JPanel infoPnl;
 	private JLabel loginLb;
@@ -231,7 +236,7 @@ public class ChatGUI extends JFrame {
 	    
 	    // панель действий
 	    actionPnl	= new JPanel();
-	    actionPnl.setPreferredSize(new Dimension(120, 400));
+	    actionPnl.setPreferredSize(new Dimension(140, 400));
 	    actionPnl.setLayout(new BoxLayout(actionPnl, BoxLayout.Y_AXIS));
 	    actionPnl.setBorder(BorderFactory.createTitledBorder("Actions"));
 
@@ -252,21 +257,34 @@ public class ChatGUI extends JFrame {
 	    fileSendPnl.add(fileSendBtn);
 	    
 	    // доска для рисования
-	    JPanel painterOpenPnl = new JPanel();
-	    painterOpenPnl.setLayout(new BoxLayout(painterOpenPnl, BoxLayout.X_AXIS));
+	    JPanel painterPnl = new JPanel();
+	    painterPnl.setLayout(new BoxLayout(painterPnl, BoxLayout.Y_AXIS));
 	    
-	    painterOpenBtn	= new JToggleButton("Painter");
-	    painterOpenBtn.setToolTipText("Show paint desk");
-	    painterOpenBtn.setActionCommand(ACTION_SHOW_PAINTER);
-	    painterOpenBtn.addActionListener(actionListener);
+	    painterShareTgl	= new JToggleButton("Share");
+	    painterShareTgl.setToolTipText("Show paint desk");
+	    painterShareTgl.setActionCommand(ACTION_SHARE_PAINTER);
+	    painterShareTgl.addActionListener(actionListener);
 	    
-	    painterOpenPnl.add(painterOpenBtn);
+	    painterGetBtn 	= new JButton("Get");
+	    painterGetBtn.setActionCommand(ACTION_GET_PAINTER);
+	    painterGetBtn.addActionListener(actionListener);
+		painterSelectCb = new JComboBox();
+		painterSelectCb.setMaximumSize(new Dimension(120, 60));
+	    
+	    JPanel painterSubPnl = new JPanel();
+	    painterSubPnl.setLayout(new BoxLayout(painterSubPnl, BoxLayout.X_AXIS));
+	    painterSubPnl.add(painterShareTgl);
+	    painterSubPnl.add(painterGetBtn);
+	    
+	    painterPnl.add(painterSelectCb);
+	    painterPnl.add(painterSubPnl);
 	    
 	    // диалог выбора файла
 	    fChooser		= new JFileChooser();
 	    
 	    actionPnl.add(fileSendPnl);
-	    actionPnl.add(painterOpenPnl);
+	    actionPnl.add(painterPnl);
+	    
 	    
 	    
 	    // панель состояния
@@ -368,6 +386,30 @@ public class ChatGUI extends JFrame {
 		contactLst.setListData(contacts.toArray());
 	}
 	
+	/**
+	 * Добавление доски для рисования в список выбора
+	 */
+	protected void addPaintDesk(final String msg) {
+		String[] params = msg.split(":");
+		if ( params[0] == null || params[0].trim().equals("") ) {
+			return;
+		}
+		// добавляем элемент в список
+		painterSelectCb.addItem(params[0]);
+	}
+	
+	/**
+	 * Удаление доски для рисования из списка выбора
+	 */
+	protected void deletePaintDesk(final String msg) {
+		String[] params = msg.split(":");
+		if ( params[0] == null || params[0].trim().equals("") ) {
+			return;
+		}
+		// удаляем элемент из списка
+		painterSelectCb.removeItem(params[0]);
+	}
+	
 	// ----------------------------------INNER CLASS----------------------------------
 	
 	private class TAListener implements KeyListener {
@@ -432,19 +474,26 @@ public class ChatGUI extends JFrame {
 				}
 			}
 			
-			if ( action.equals(ACTION_SHOW_PAINTER) ) {
+			if ( action.equals(ACTION_SHARE_PAINTER) ) {
 				// открываем доску для рисования
-				if ( ChatGUI.this.painterOpenBtn.isSelected() ) {
-					// показываем доску
-					log.info("Open paint desk");
+				if ( ChatGUI.this.painterShareTgl.isSelected() ) {
+					// показываем доску - оповещаем сервер об открытии доски
+					log.info("Share paint desk");
+					ChatGUI.this.client.getClientMsg().sendMsg(COMMAND_DESK_ON);
 					paintDeskFrm.setVisible(true);
 				} else {
-					// скрываем доску
+					// скрываем доску - оповещаем сервер о закрытии доски
 					log.info("Hide paint desk");
+					ChatGUI.this.client.getClientMsg().sendMsg(COMMAND_DESK_OFF);
 					paintDeskFrm.setVisible(false);
-				}
-				
+					
+				}	
 			}
+			
+			if ( action.equals(ACTION_GET_PAINTER) ) {
+				// подключаемся к расшаренной доске
+				log.info("Get paint desk");
+			} 
 		}
 	}
 	
@@ -528,6 +577,14 @@ public class ChatGUI extends JFrame {
 	            		log.info("New contact in chat");
 	            		// обновляем контакты
 	            		ClientChat.getChatGUI().addContact(line);
+	            	}
+	            	if ( line.contains(COMMAND_DESK_ON) ) {
+	            		// доступна новая доска для рисования
+	            		ClientChat.getChatGUI().addPaintDesk(line);
+	            	}
+	            	if ( line.contains(COMMAND_DESK_OFF) ) {
+	            		// убираем доску из списка
+	            		ClientChat.getChatGUI().deletePaintDesk(line);
 	            	}
 	            	// выводим пришедшее сообщение
 	            	ClientChat.getChatGUI().addLineMessage(line);

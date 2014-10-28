@@ -36,7 +36,7 @@ public class PaintFrame extends JFrame {
 
     public PaintFrame() {
         super("Paint Frame");
-        setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setSize(400, 400);
         setLayout(new BorderLayout());
         add(pane, BorderLayout.CENTER);

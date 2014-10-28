@@ -47,6 +47,9 @@ public class ChatThreadedServer {
     private static final String COMMAND_SEND_FILE	= ".file";
     private static final String COMMAND_USERLIST	= ".userlist";
     private static final String COMMAND_EXIT 		= ".exit";
+    private static final String COMMAND_DESK_ON 	= ".deskon";
+    private static final String COMMAND_DESK_OFF 	= ".deskoff";
+    
     
     private static final String MESSAGE_NOT_LOGINED 	= "You are not logined!";    
     private static final int USER_LIMIT = 10;
@@ -143,7 +146,13 @@ public class ChatThreadedServer {
     		
     	} else if ( COMMAND_USERLIST.equals(params[0]) ) {
     		msg = getLoginedUsers(handler);
-    	} 
+    	
+    	} else if ( COMMAND_DESK_ON.equals(params[0]) ) {
+    		msg = "paint desk on"; 
+    	
+    	} else if ( COMMAND_DESK_OFF.equals(params[0]) ) {
+    		msg = "paint desk off";
+    	}
     	return msg;
     }
     
