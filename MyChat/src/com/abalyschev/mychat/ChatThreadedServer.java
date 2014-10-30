@@ -34,7 +34,8 @@ public class ChatThreadedServer {
     private static final int PORT_MESSAGE			= 19000;
     private static final int PORT_FILE_SENDING		= 19001;
     private static final int PORT_FILE_RECEIVING	= 19002;
-    private static final int PORT_DESK_CHANGING		= 19003;
+    private static final int PORT_DESK_SHARING		= 19003;
+    private static final int PORT_DESK_VIEWING		= 19004;
     
     private static int counter = 0;
     
@@ -79,10 +80,12 @@ public class ChatThreadedServer {
         log.info("Starting server...");
         ServerSocket srvMsgSocket			= new ServerSocket(PORT_MESSAGE);
         ServerSocket srvFileReceivingSocket	= new ServerSocket(PORT_FILE_RECEIVING);
-        ServerSocket srvDeskSocket			= new ServerSocket(PORT_DESK_CHANGING);
+        ServerSocket srvDeskSocket			= new ServerSocket(PORT_DESK_SHARING);
         
         // обработчик файлов
-        FileHandler srvFile			= new FileHandler(this);
+        FileHandler srvFile					= new FileHandler(this);
+        // обработчик запросов на просмотр доски
+        DeskViewingHandler srvDeskViewng 	= new DeskViewingHandler(this);
         
         while (true) {
 
@@ -97,7 +100,7 @@ public class ChatThreadedServer {
             log.info("Desk sharing client connected: " + skDeskPainter.getInetAddress().toString() + ":" + skDeskPainter.getPort());
             
             // создаем обработчик доски для рисования
-            new PaintDeskHandler(this, skDeskPainter);
+            new DeskSharingHandler(this, skDeskPainter);
             
             // создаем обработчик сообщений
             ClientHandler handler = new ClientHandler(this, skMsgClient, skFileClient, counter++);
@@ -846,9 +849,9 @@ public class ChatThreadedServer {
     // ---------------------------------------------INNER CLASS---------------------------------------
     
     /**
-	 * Обработчик соединения на предоставление доcки
+	 * Обработчик запросов на расшаривоние доски
 	 */
-	private static class PaintDeskHandler implements Runnable {
+	private static class DeskSharingHandler implements Runnable {
 		private Thread thread;
 		private Socket sharingSk;
 		private PrintWriter out;
@@ -857,21 +860,17 @@ public class ChatThreadedServer {
 		private final ChatThreadedServer server;
 		
 		// map обработчиков на предоставление доски K -> логин V - сокет
-    	private static Hashtable<String, PaintDeskHandler> deskSharingTbl;
-    	// map соединений на просмотр педоставленных досок
-    	private static Hashtable<String, Socket> deskViewingTbl;
+    	private static Hashtable<String, DeskSharingHandler> deskSharingTbl;
     	
     	static {
     		// инициализация статических данных
     		deskSharingTbl = new Hashtable<>();
-    		deskViewingTbl = new Hashtable<>();
     	}
     	
     	// сообщения
     	public static final String MESSAGE_SHARING = "sharing";
-    	public static final String MESSAGE_VIEWING = "viewing";
-		
-		public PaintDeskHandler(final ChatThreadedServer server, final Socket sharingSk) throws IOException {
+    	
+		public DeskSharingHandler(final ChatThreadedServer server, final Socket sharingSk) throws IOException {
 			this.thread 	= new Thread(this);
 			this.server		= server;
 			this.sharingSk 	= sharingSk;
@@ -895,27 +894,72 @@ public class ChatThreadedServer {
     			while ( (line = in.readLine()) != null ) {
     				log.info("Input: " + line);
     			}
-//    			// читаем заголовок в формате: login:sharing|viewing
-//				String[] params = in.readLine().split(":");
-//				if ( params[1] == null ) {
-//					// что-то не так с заголовком - в игнор
-//					continue;
-//				}
-//				log.info("New conn: login: " + params[0] + " action: " + params[1]);
-//				if ( params[1].equals(MESSAGE_SHARING) ) {
-//					// создаем новый обработчик
-//					deskSharingTbl.put(params[0], new PaintDeskSharingHandler(sock, params[0]));
-//				}
-//				if ( params[1].equals(MESSAGE_VIEWING) ) {
-//					// соединение на просмотр - заносим в мап
-//					deskViewingTbl.put(params[0], sock);
-//				}
 			} catch (IOException e) {
 				
 			} finally {
 				Util.closeResource(out);
 				Util.closeResource(in);
 				Util.closeResource(sharingSk);
+			}
+		}
+	}
+	
+	/**
+	 * Обработчик запросов на просмотр доски
+	 */
+	private static class DeskViewingHandler implements Runnable {
+		private Thread thread;
+		private ServerSocket srvViewingSk;
+		private final ChatThreadedServer server;
+		
+		// map соединений на просмотр расшаренных досок
+    	private static Hashtable<String, Socket> deskViewingTbl; 
+    	
+    	public static final String MESSAGE_VIEWING = "viewing";
+    	
+		public DeskViewingHandler(final ChatThreadedServer server) {
+    		this.thread			= new Thread(this);
+    		this.server			= server;
+    		deskViewingTbl		= new Hashtable<>();
+    		try {
+        		this.srvViewingSk	= new ServerSocket(PORT_DESK_VIEWING);
+    		} catch (IOException e) {
+    			e.printStackTrace();
+    		}
+    		thread.start();
+    	}
+		@Override
+		public void run() {
+			log.info("Do desk viewing processing");
+			Socket sock 		= null;
+			BufferedReader in 	= null;
+			try {
+				while (true) {
+					sock	= srvViewingSk.accept();
+					in 		= new BufferedReader(new InputStreamReader(sock.getInputStream()));
+					
+	    			// читаем заголовок в формате: login:viewing
+					String[] params = in.readLine().split(":");
+					if ( params[1] == null ) {
+						// что-то не так с заголовком - в игнор
+						log.info("Desk View: something wrong with header");
+						Util.closeResource(in);
+						Util.closeResource(sock);
+						continue;
+					}
+					log.info("New desk connection: login: " + params[0] + " action: " + params[1]);
+					if ( params[1].equals(MESSAGE_VIEWING) ) {
+						// соединение на просмотр - заносим в мап
+						deskViewingTbl.put(params[0], sock);
+					}
+					Util.closeResource(in);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			
+			} finally {
+				Util.closeResource(in);
+				Util.closeResource(sock);
 			}
 		}
 	}

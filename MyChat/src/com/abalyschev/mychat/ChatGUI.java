@@ -62,7 +62,8 @@ public class ChatGUI extends JFrame {
 	public static final int PORT_MESSAGE 		= 19000;
 	public static final int PORT_FILE_SENDING	= 19001;
 	public static final int PORT_FILE_RECEIVING	= 19002;
-	public static final int PORT_DESK_CHANGING	= 19003;
+	public static final int PORT_DESK_SHARING	= 19003;
+	public static final int PORT_DESK_VIEWING	= 19004;
 	
 	
     public static final String HOST = "localhost";
@@ -134,7 +135,7 @@ public class ChatGUI extends JFrame {
 	    	    // доска для рисования
 	    	    try {
 	    	    	// сокет обмена данными между досками
-	    	    	Socket paintDeskSk = new Socket(HOST, PORT_DESK_CHANGING);
+	    	    	Socket paintDeskSk = new Socket(HOST, PORT_DESK_SHARING);
 		    	    paintDeskFrm = new PaintFrame(userLogin, PaintFrame.Mode.SHARING, paintDeskSk);
 	            	paintDeskFrm.setVisible(false);
 	    	    } catch(IOException e) {
@@ -503,6 +504,37 @@ public class ChatGUI extends JFrame {
 				// подключаемся к расшаренной доске
 				log.info("Get paint desk");
 				
+				try {
+					log.info("Send desk viewing query");
+					Socket sock 		= new Socket(HOST, PORT_DESK_VIEWING);
+					PrintWriter out		= new PrintWriter(sock.getOutputStream());
+					out.write(ChatGUI.getLogin() + ":" + "viewing");
+					out.flush();
+					out.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				
+				/*
+				new Thread(new Runnable() {
+					public void run() {
+						try {
+							log.info("Send desk viewing query");
+							Socket sock 		= new Socket(HOST, PORT_DESK_VIEWING);
+							BufferedReader in	= new BufferedReader(new InputStreamReader(sock.getInputStream()));
+							PrintWriter out		= new PrintWriter(sock.getOutputStream());
+							out.write(ChatGUI.getLogin() + ":" + "viewing");
+							out.flush();
+							String line = null;
+							while ( (line = in.readLine()) != null ) {
+								log.info("Input desk data: " + line);
+							}
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+				}).start();
+				*/
 			} 
 		}
 	}
