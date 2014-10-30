@@ -62,6 +62,7 @@ public class ChatGUI extends JFrame {
 	public static final int PORT_MESSAGE 		= 19000;
 	public static final int PORT_FILE_SENDING	= 19001;
 	public static final int PORT_FILE_RECEIVING	= 19002;
+	public static final int PORT_DESK_CHANGING	= 19003;
 	
 	
     public static final String HOST = "localhost";
@@ -126,11 +127,19 @@ public class ChatGUI extends JFrame {
 	public static void startChat(final String login) {
 	    javax.swing.SwingUtilities.invokeLater(new Runnable() {
 	        public void run() {
+	        	// основное окно
 	        	javax.swing.JFrame frame = new ChatGUI(login);
 	    	    frame.setVisible(true);
 	    	    
-	    	    paintDeskFrm = new PaintFrame();
-            	paintDeskFrm.setVisible(false);
+	    	    // доска для рисования
+	    	    try {
+	    	    	// сокет обмена данными между досками
+	    	    	Socket paintDeskSk = new Socket(HOST, PORT_DESK_CHANGING);
+		    	    paintDeskFrm = new PaintFrame(userLogin, PaintFrame.Mode.SHARING, paintDeskSk);
+	            	paintDeskFrm.setVisible(false);
+	    	    } catch(IOException e) {
+	    	    	e.getStackTrace();
+	    	    }
 	        }
 	    });
 	}
@@ -493,6 +502,7 @@ public class ChatGUI extends JFrame {
 			if ( action.equals(ACTION_GET_PAINTER) ) {
 				// подключаемся к расшаренной доске
 				log.info("Get paint desk");
+				
 			} 
 		}
 	}

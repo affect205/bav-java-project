@@ -21,6 +21,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 
@@ -33,6 +34,7 @@ public class ChatThreadedServer {
     private static final int PORT_MESSAGE			= 19000;
     private static final int PORT_FILE_SENDING		= 19001;
     private static final int PORT_FILE_RECEIVING	= 19002;
+    private static final int PORT_DESK_CHANGING		= 19003;
     
     private static int counter = 0;
     
@@ -49,7 +51,6 @@ public class ChatThreadedServer {
     private static final String COMMAND_EXIT 		= ".exit";
     private static final String COMMAND_DESK_ON 	= ".deskon";
     private static final String COMMAND_DESK_OFF 	= ".deskoff";
-    
     
     private static final String MESSAGE_NOT_LOGINED 	= "You are not logined!";    
     private static final int USER_LIMIT = 10;
@@ -78,9 +79,10 @@ public class ChatThreadedServer {
         log.info("Starting server...");
         ServerSocket srvMsgSocket			= new ServerSocket(PORT_MESSAGE);
         ServerSocket srvFileReceivingSocket	= new ServerSocket(PORT_FILE_RECEIVING);
+        ServerSocket srvDeskSocket			= new ServerSocket(PORT_DESK_CHANGING);
         
         // обработчик файлов
-        FileHandler srvFile	= new FileHandler(this);
+        FileHandler srvFile			= new FileHandler(this);
         
         while (true) {
 
@@ -90,7 +92,13 @@ public class ChatThreadedServer {
             
             Socket skFileClient = srvFileReceivingSocket.accept();
             log.info("File client connected: " + skFileClient.getInetAddress().toString() + ":" + skFileClient.getPort());
-              
+        
+            Socket skDeskPainter = srvDeskSocket.accept();
+            log.info("Desk sharing client connected: " + skDeskPainter.getInetAddress().toString() + ":" + skDeskPainter.getPort());
+            
+            // создаем обработчик доски для рисования
+            new PaintDeskHandler(this, skDeskPainter);
+            
             // создаем обработчик сообщений
             ClientHandler handler = new ClientHandler(this, skMsgClient, skFileClient, counter++);
             
@@ -834,4 +842,81 @@ public class ChatThreadedServer {
     		}
     	}
     }
+    
+    // ---------------------------------------------INNER CLASS---------------------------------------
+    
+    /**
+	 * Обработчик соединения на предоставление доcки
+	 */
+	private static class PaintDeskHandler implements Runnable {
+		private Thread thread;
+		private Socket sharingSk;
+		private PrintWriter out;
+		private BufferedReader in;
+		private final String login;
+		private final ChatThreadedServer server;
+		
+		// map обработчиков на предоставление доски K -> логин V - сокет
+    	private static Hashtable<String, PaintDeskHandler> deskSharingTbl;
+    	// map соединений на просмотр педоставленных досок
+    	private static Hashtable<String, Socket> deskViewingTbl;
+    	
+    	static {
+    		// инициализация статических данных
+    		deskSharingTbl = new Hashtable<>();
+    		deskViewingTbl = new Hashtable<>();
+    	}
+    	
+    	// сообщения
+    	public static final String MESSAGE_SHARING = "sharing";
+    	public static final String MESSAGE_VIEWING = "viewing";
+		
+		public PaintDeskHandler(final ChatThreadedServer server, final Socket sharingSk) throws IOException {
+			this.thread 	= new Thread(this);
+			this.server		= server;
+			this.sharingSk 	= sharingSk;
+			this.login		= "login";
+			this.in			= new BufferedReader(new InputStreamReader(this.sharingSk.getInputStream()));
+			this.out		= new PrintWriter(this.sharingSk.getOutputStream());
+			
+			// запускаем поток обработчика
+			this.thread.start();
+		}
+		
+		public String getLogin() {
+			return this.login;
+		}
+		
+		@Override
+		public void run() {
+			log.info("Do desk sharing processing");
+			try {
+				String line = null;
+    			while ( (line = in.readLine()) != null ) {
+    				log.info("Input: " + line);
+    			}
+//    			// читаем заголовок в формате: login:sharing|viewing
+//				String[] params = in.readLine().split(":");
+//				if ( params[1] == null ) {
+//					// что-то не так с заголовком - в игнор
+//					continue;
+//				}
+//				log.info("New conn: login: " + params[0] + " action: " + params[1]);
+//				if ( params[1].equals(MESSAGE_SHARING) ) {
+//					// создаем новый обработчик
+//					deskSharingTbl.put(params[0], new PaintDeskSharingHandler(sock, params[0]));
+//				}
+//				if ( params[1].equals(MESSAGE_VIEWING) ) {
+//					// соединение на просмотр - заносим в мап
+//					deskViewingTbl.put(params[0], sock);
+//				}
+			} catch (IOException e) {
+				
+			} finally {
+				Util.closeResource(out);
+				Util.closeResource(in);
+				Util.closeResource(sharingSk);
+			}
+		}
+	}
 }

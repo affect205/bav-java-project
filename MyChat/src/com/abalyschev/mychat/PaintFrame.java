@@ -3,10 +3,6 @@
  */
 package com.abalyschev.mychat;
 
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -17,16 +13,35 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Line2D;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 /**
  *
  */
 public class PaintFrame extends JFrame {
 
+	// режим работы доски ( расшаривание или просмотр )
+	public static enum Mode { SHARING, VIEWING };
+	private final Mode mode;
+	
+	// сокет для соединения с сервером 
+	private Socket paintDeskSk;
+	private BufferedReader in;
+	private PrintWriter out;
+	
+	private String login;
+	
     List<Line2D.Float> lines = new ArrayList<>();
     // fix!!!
     List<Color> colors = new ArrayList<>();
@@ -34,8 +49,33 @@ public class PaintFrame extends JFrame {
     JPanel pane = new DrawPane();
     Color color = Color.RED;
 
-    public PaintFrame() {
+    /**
+     * Конструктор для сетевого соединения
+     */
+    public PaintFrame(final String login, final Mode mode, final Socket paintDeskSk) {
+    	this(mode);
+    	this.login			= login;
+    	this.paintDeskSk 	= paintDeskSk;
+    	try {
+    		this.in 	= new BufferedReader(new InputStreamReader(this.paintDeskSk.getInputStream()));
+        	this.out 	= new PrintWriter(this.paintDeskSk.getOutputStream());
+        	// сообщение инициализации
+        	this.out.write(login + ":sharing\n");
+        	this.out.flush();
+    	} catch(IOException e) {
+    		e.printStackTrace();
+    	}
+    }
+    
+    /**
+     * Конструктор для работы вне сети
+     */
+    public PaintFrame(final Mode mode) {
         super("Paint Frame");
+        
+        // режим работы
+        this.mode = mode;
+        
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setSize(400, 400);
         setLayout(new BorderLayout());
@@ -57,11 +97,20 @@ public class PaintFrame extends JFrame {
                     lastPoint = e.getPoint();
                     return;
                 }
+                
+                // данные о положении последней и текущей точек
+                String line = lastPoint.x + ":" + lastPoint.y + ":" + e.getPoint().x + ":" + e.getPoint().y; 
+                
                 lines.add(new Line2D.Float(lastPoint, e.getPoint()));
                 // fix!!!
                 colors.add(color);
                 lastPoint = e.getPoint();
 
+                // передаем данные о положении мыши на сервер
+                out.write(line+"\n");
+                out.flush();
+                
+                // перерисовываем область окна
                 pane.repaint();
             }
 
@@ -162,7 +211,7 @@ public class PaintFrame extends JFrame {
     }
 
     private static void createAndShowGUI() {
-        javax.swing.JFrame frame = new PaintFrame();
+        javax.swing.JFrame frame = new PaintFrame(Mode.SHARING);
         frame.setVisible(true);
     }
 }
