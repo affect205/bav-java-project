@@ -31,16 +31,13 @@ import javax.swing.JPanel;
  */
 public class PaintFrame extends JFrame {
 
-	// режим работы доски ( расшаривание или просмотр )
-	public static enum Mode { SHARING, VIEWING };
+	// режим работы доски ( расшаривание, просмотр, без соединения )
+	public static enum Mode { SHARING, VIEWING, NONE };
 	private final Mode mode;
 	
-	// сокет для соединения с сервером 
-	private Socket paintDeskSk;
-	private BufferedReader in;
-	private PrintWriter out;
-	
+	// логин вызывателя и получателя
 	private String login;
+	private String toLogin;
 	
     List<Line2D.Float> lines = new ArrayList<>();
     // fix!!!
@@ -48,9 +45,17 @@ public class PaintFrame extends JFrame {
     Point lastPoint;
     JPanel pane = new DrawPane();
     Color color = Color.RED;
-
+    
+    // сокет для соединения с сервером 
+	private Socket paintDeskSk;
+	private BufferedReader in;
+	private PrintWriter out;
+    
+    // обработчик входных команд
+    private DataHandler dataHandler;
+    
     /**
-     * Конструктор для сетевого соединения
+     * Конструктор для сетевого соединения (на предоставление)
      */
     public PaintFrame(final String login, final Mode mode, final Socket paintDeskSk) {
     	this(mode);
@@ -59,12 +64,55 @@ public class PaintFrame extends JFrame {
     	try {
     		this.in 	= new BufferedReader(new InputStreamReader(this.paintDeskSk.getInputStream()));
         	this.out 	= new PrintWriter(this.paintDeskSk.getOutputStream());
-        	// сообщение инициализации
+        	
+        	// инициализация доски на предоставление
         	this.out.write(login + ":sharing\n");
-        	this.out.flush();
+            this.out.flush();
+
     	} catch(IOException e) {
     		e.printStackTrace();
     	}
+    }
+    
+    /**
+     * Конструктор для сетевого соединения (на просмотр)
+     */
+    public PaintFrame(final String login, final String toLogin, final Mode mode, final Socket paintDeskSk) {
+    	this(mode);
+    	this.login			= login;
+    	this.toLogin		= toLogin;
+    	this.paintDeskSk 	= paintDeskSk;
+    	try {
+    		this.in 	= new BufferedReader(new InputStreamReader(this.paintDeskSk.getInputStream()));
+        	this.out 	= new PrintWriter(this.paintDeskSk.getOutputStream());
+        	// инициализация лоски на просмотр
+        	this.out.write(login + ":viewing:" + this.toLogin + "\n");
+            this.out.flush();
+            // запуск обработчика данных
+        	this.dataHandler = new DataHandler();
+            this.dataHandler.start();
+    	} catch(IOException e) {
+    		e.printStackTrace();
+    	}
+    }
+    
+    /**
+     * Создание линии
+     */
+    public void drawLine(final Point lstPoint, final Point crntPoint) {
+    	lines.add(new Line2D.Float(lstPoint, crntPoint));
+        // fix!!!
+        colors.add(color);
+        lastPoint = crntPoint;
+        // перерисовываем область окна
+        pane.repaint();
+    }
+    
+    public void drawTestLine() {
+    	drawLine(new Point(20, 20), new Point(120, 20));
+    	drawLine(new Point(120, 20), new Point(120, 220));
+    	drawLine(new Point(20, 40), new Point(120, 70));
+    	drawLine(new Point(20, 20), new Point(120, 200));
     }
     
     /**
@@ -76,8 +124,13 @@ public class PaintFrame extends JFrame {
         // режим работы
         this.mode = mode;
         
-        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        setSize(400, 400);
+        int close_mode = JFrame.DISPOSE_ON_CLOSE;
+        if ( mode == Mode.SHARING ) {
+        	close_mode = JFrame.DO_NOTHING_ON_CLOSE;
+        }
+        
+        setDefaultCloseOperation(close_mode);
+        setSize(500, 500);
         setLayout(new BorderLayout());
         add(pane, BorderLayout.CENTER);
         add(new ButtonPanel(), BorderLayout.NORTH);
@@ -93,6 +146,12 @@ public class PaintFrame extends JFrame {
             @Override
             public void mouseDragged(MouseEvent e) {
                 super.mouseDragged(e);
+                
+                // в режиме просмотра манипуляции с доской невозможны 
+                if ( mode == Mode.VIEWING ) {
+                	return;
+                }
+                
                 if (lastPoint == null) {
                     lastPoint = e.getPoint();
                     return;
@@ -101,17 +160,14 @@ public class PaintFrame extends JFrame {
                 // данные о положении последней и текущей точек
                 String line = lastPoint.x + ":" + lastPoint.y + ":" + e.getPoint().x + ":" + e.getPoint().y; 
                 
-                lines.add(new Line2D.Float(lastPoint, e.getPoint()));
-                // fix!!!
-                colors.add(color);
-                lastPoint = e.getPoint();
-
-                // передаем данные о положении мыши на сервер
-                out.write(line+"\n");
-                out.flush();
+                // в режиме предоставления передаем данные о положении мыши на сервер
+                if ( mode == Mode.SHARING ) {
+                	out.write(line+"\n");
+                    out.flush();
+                }
                 
-                // перерисовываем область окна
-                pane.repaint();
+                // данные для создания и отрисовки новой линии
+                drawLine(lastPoint, e.getPoint());
             }
 
             @Override
@@ -213,5 +269,30 @@ public class PaintFrame extends JFrame {
     private static void createAndShowGUI() {
         javax.swing.JFrame frame = new PaintFrame(Mode.SHARING);
         frame.setVisible(true);
+    }
+    
+    /**
+     * Класс обработчик данных, присылаемых с расшаренной доски
+     */
+    private class DataHandler implements Runnable {
+    	private Thread thread;
+    	
+    	public DataHandler() {
+    		thread = new Thread(this);
+    	}
+    	
+    	@Override
+    	public void run() {
+    		while (true) {
+    			
+    		}
+    	}
+    	
+    	/** 
+    	 * Запуск обработчика
+    	 */
+    	public void start() {
+    		thread.start();
+    	}
     }
 }

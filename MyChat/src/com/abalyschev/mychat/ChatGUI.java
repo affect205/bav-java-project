@@ -10,6 +10,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -97,6 +99,7 @@ public class ChatGUI extends JFrame {
 	private JToggleButton painterShareTgl;
 	private JButton painterGetBtn;
 	private JComboBox painterSelectCb;
+	private boolean isDeskViewingActive = false;
 	
 	private JPanel infoPnl;
 	private JLabel loginLb;
@@ -115,11 +118,16 @@ public class ChatGUI extends JFrame {
 	// обработчик нажатия лавиш
 	private static KeyListener keyListener;
 	
+	// обработчик событий окна
+	private static WndListener wndListener;
+	
 	// клиент чата
 	private static ClientChat client;
 	
 	// дочернее окно: доска для рисования
-	private static JFrame paintDeskFrm;
+	private static JFrame paintDeskSharingFrm;
+	private static JFrame paintDeskViewingFrm;
+	
 	
 	// логин пользователя
 	private static final String LOGIN_UNKNOWN = "unknown";
@@ -135,9 +143,10 @@ public class ChatGUI extends JFrame {
 	    	    // доска для рисования
 	    	    try {
 	    	    	// сокет обмена данными между досками
-	    	    	Socket paintDeskSk = new Socket(HOST, PORT_DESK_SHARING);
-		    	    paintDeskFrm = new PaintFrame(userLogin, PaintFrame.Mode.SHARING, paintDeskSk);
-	            	paintDeskFrm.setVisible(false);
+	    	    	Socket paintDeskSk	= new Socket(HOST, PORT_DESK_SHARING);
+		    	    paintDeskSharingFrm = new PaintFrame(userLogin, PaintFrame.Mode.SHARING, paintDeskSk);
+	            	paintDeskSharingFrm.setVisible(false);
+	            	paintDeskViewingFrm	= null;
 	    	    } catch(IOException e) {
 	    	    	e.getStackTrace();
 	    	    }
@@ -193,6 +202,7 @@ public class ChatGUI extends JFrame {
 		// обработчики событий
 		actionListener 	= new ButtonListener();
 		keyListener		= new TAListener();
+		wndListener		= new WndListener();
 		
 		// панель просмотра сообщения
 	    viewMsgPnl	= new JPanel();
@@ -443,7 +453,39 @@ public class ChatGUI extends JFrame {
 	
 	
 	// ----------------------------------INNER CLASS----------------------------------
-	
+	/**
+	 * Обработчик окна
+	 */
+	private class WndListener implements WindowListener {
+		@Override 
+		public void windowClosed(WindowEvent e) {
+			log.info("WindowListener: child window Closed");
+		    // окно для просмотра освобождено
+			ChatGUI.this.isDeskViewingActive = false;
+			ChatGUI.this.paintDeskViewingFrm = null;
+		}
+		@Override 
+		public void windowOpened(WindowEvent e) {}
+		
+		@Override 
+        public void windowClosing(WindowEvent e) {}
+
+        @Override 
+        public void windowIconified(WindowEvent e) {}
+
+        @Override 
+        public void windowDeiconified(WindowEvent e) {}
+
+        @Override 
+        public void windowActivated(WindowEvent e) {}
+
+        @Override 
+        public void windowDeactivated(WindowEvent e) {}
+	}
+	// ----------------------------------INNER CLASS----------------------------------
+	/**
+	 * Обработчик кнопок
+	 */
 	private class ButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent event) {
 			String action = event.getActionCommand();
@@ -490,12 +532,12 @@ public class ChatGUI extends JFrame {
 					// показываем доску - оповещаем сервер об открытии доски
 					log.info("Share paint desk");
 					ChatGUI.this.client.getClientMsg().sendMsg(COMMAND_DESK_ON);
-					paintDeskFrm.setVisible(true);
+					paintDeskSharingFrm.setVisible(true);
 				} else {
 					// скрываем доску - оповещаем сервер о закрытии доски
 					log.info("Hide paint desk");
 					ChatGUI.this.client.getClientMsg().sendMsg(COMMAND_DESK_OFF);
-					paintDeskFrm.setVisible(false);
+					paintDeskSharingFrm.setVisible(false);
 					
 				}	
 			}
@@ -504,37 +546,22 @@ public class ChatGUI extends JFrame {
 				// подключаемся к расшаренной доске
 				log.info("Get paint desk");
 				
-				try {
-					log.info("Send desk viewing query");
-					Socket sock 		= new Socket(HOST, PORT_DESK_VIEWING);
-					PrintWriter out		= new PrintWriter(sock.getOutputStream());
-					out.write(ChatGUI.getLogin() + ":" + "viewing");
-					out.flush();
-					out.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				
-				/*
-				new Thread(new Runnable() {
-					public void run() {
-						try {
-							log.info("Send desk viewing query");
-							Socket sock 		= new Socket(HOST, PORT_DESK_VIEWING);
-							BufferedReader in	= new BufferedReader(new InputStreamReader(sock.getInputStream()));
-							PrintWriter out		= new PrintWriter(sock.getOutputStream());
-							out.write(ChatGUI.getLogin() + ":" + "viewing");
-							out.flush();
-							String line = null;
-							while ( (line = in.readLine()) != null ) {
-								log.info("Input desk data: " + line);
-							}
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
+				if ( /*ChatGUI.this.painterSelectCb.getItemCount() > 0 && ! ChatGUI.this.isDeskViewingActive*/ true ) {
+					// есть к кому подключится и доска не занята - создаем доску для просмотра
+					String login	= ChatGUI.getLogin();
+					//String toLogin 	= (String)ChatGUI.this.painterSelectCb.getSelectedItem();
+					String toLogin = "Nick";
+					// окно для просмотра занято
+					ChatGUI.this.isDeskViewingActive = true;
+					try {
+						ChatGUI.this.paintDeskViewingFrm = new PaintFrame(login, toLogin, PaintFrame.Mode.VIEWING, new Socket(HOST, PORT_DESK_VIEWING));
+						ChatGUI.this.paintDeskViewingFrm.addWindowListener(ChatGUI.wndListener);
+						ChatGUI.this.paintDeskViewingFrm.setVisible(true);
+						((PaintFrame)ChatGUI.this.paintDeskViewingFrm).drawTestLine();
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
-				}).start();
-				*/
+				}
 			} 
 		}
 	}
