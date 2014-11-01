@@ -8,6 +8,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
@@ -112,14 +113,11 @@ public class ChatGUI extends JFrame {
 	// список сообщений
 	private List<String> messages;
 	
-	// обработчик нажатия кнопки
+	// обработчик событий компонентов GUI
 	private static ActionListener actionListener;
-	
-	// обработчик нажатия лавиш
 	private static KeyListener keyListener;
-	
-	// обработчик событий окна
 	private static WndListener wndListener;
+	private static ActionListener cmbListener;
 	
 	// клиент чата
 	private static ClientChat client;
@@ -203,6 +201,7 @@ public class ChatGUI extends JFrame {
 		actionListener 	= new ButtonListener();
 		keyListener		= new TAListener();
 		wndListener		= new WndListener();
+		cmbListener		= new ComboBoxListener();
 		
 		// панель просмотра сообщения
 	    viewMsgPnl	= new JPanel();
@@ -290,7 +289,8 @@ public class ChatGUI extends JFrame {
 	    painterGetBtn.addActionListener(actionListener);
 		painterSelectCb = new JComboBox();
 		painterSelectCb.setMaximumSize(new Dimension(120, 60));
-	    
+		painterSelectCb.addActionListener(cmbListener);
+		
 	    JPanel painterSubPnl = new JPanel();
 	    painterSubPnl.setLayout(new BoxLayout(painterSubPnl, BoxLayout.X_AXIS));
 	    painterSubPnl.add(painterShareTgl);
@@ -454,7 +454,20 @@ public class ChatGUI extends JFrame {
 	
 	// ----------------------------------INNER CLASS----------------------------------
 	/**
-	 * Обработчик окна
+	 * Обработчик событий списка
+	 */
+	private class ComboBoxListener implements ActionListener {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			JComboBox cb = (JComboBox) e.getSource();
+			if ( cb.getItemCount() > 0 ) {
+				cb.setSelectedIndex(0);
+			}
+		}
+	}
+	
+	/**
+	 * Обработчик событий окна
 	 */
 	private class WndListener implements WindowListener {
 		@Override 
@@ -549,8 +562,8 @@ public class ChatGUI extends JFrame {
 				if ( /*ChatGUI.this.painterSelectCb.getItemCount() > 0 && ! ChatGUI.this.isDeskViewingActive*/ true ) {
 					// есть к кому подключится и доска не занята - создаем доску для просмотра
 					String login	= ChatGUI.getLogin();
-					//String toLogin 	= (String)ChatGUI.this.painterSelectCb.getSelectedItem();
-					String toLogin = "Nick";
+					String toLogin 	= (String)ChatGUI.this.painterSelectCb.getSelectedItem();
+					//String toLogin = "Nick";
 					// окно для просмотра занято
 					ChatGUI.this.isDeskViewingActive = true;
 					try {

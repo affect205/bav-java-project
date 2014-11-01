@@ -26,11 +26,16 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *
  */
 public class PaintFrame extends JFrame {
 
+	Logger log = LoggerFactory.getLogger(PaintFrame.class);
+	
 	// режим работы доски ( расшаривание, просмотр, без соединения )
 	public static enum Mode { SHARING, VIEWING, NONE };
 	private final Mode mode;
@@ -38,6 +43,8 @@ public class PaintFrame extends JFrame {
 	// логин вызывателя и получателя
 	private String login;
 	private String toLogin;
+	
+	private static final String COMMAND_EXIT = ".exit";
 	
     List<Line2D.Float> lines = new ArrayList<>();
     // fix!!!
@@ -90,7 +97,6 @@ public class PaintFrame extends JFrame {
             this.out.flush();
             // запуск обработчика данных
         	this.dataHandler = new DataHandler();
-            this.dataHandler.start();
     	} catch(IOException e) {
     		e.printStackTrace();
     	}
@@ -271,6 +277,7 @@ public class PaintFrame extends JFrame {
         frame.setVisible(true);
     }
     
+    // -------------------------------INNER CLASS--------------------------
     /**
      * Класс обработчик данных, присылаемых с расшаренной доски
      */
@@ -278,21 +285,28 @@ public class PaintFrame extends JFrame {
     	private Thread thread;
     	
     	public DataHandler() {
-    		thread = new Thread(this);
+    		this.thread		= new Thread(this);
+    		this.thread.start();
     	}
     	
     	@Override
     	public void run() {
-    		while (true) {
-    			
+    		log.info("Do sharing data handling");
+    		try {
+    			String line = null;
+    			log.info("isClosed: " 		+ paintDeskSk.isClosed() 
+    					+ " isConnected: " 	+ paintDeskSk.isConnected() 
+    					+ " isBound: " 		+ paintDeskSk.isBound());
+        		while ( (line = in.readLine()) != null ) {
+        			log.info("Desk viewing info: " + line);
+        			if ( COMMAND_EXIT.equals(line) ) {
+        				// выход из цикла
+        				break;
+        			}
+        		}
+    		} catch (IOException e) {
+    			e.printStackTrace();
     		}
-    	}
-    	
-    	/** 
-    	 * Запуск обработчика
-    	 */
-    	public void start() {
-    		thread.start();
     	}
     }
 }

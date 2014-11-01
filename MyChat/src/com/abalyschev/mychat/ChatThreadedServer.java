@@ -20,9 +20,12 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -856,7 +859,7 @@ public class ChatThreadedServer {
 		private Socket sharingSk;
 		private PrintWriter out;
 		private BufferedReader in;
-		private final String login;
+		private String login;
 		private final ChatThreadedServer server;
 		
 		// map обработчиков на предоставление доски K -> логин V - сокет
@@ -892,10 +895,27 @@ public class ChatThreadedServer {
 			try {
 				String line = null;
     			while ( (line = in.readLine()) != null ) {
-    				log.info("Input: " + line);
+    				if ( line.contains(":" + MESSAGE_SHARING) ) {
+    					// сообщение приветствия - извлекаем логин
+    					log.info("Desk sharing data: " + line);
+    					this.login = line.split(":")[0];
+    					continue;
+    				}
+    				
+    				// поиск досок для просмотра, подключенных к текущей доске
+    				log.info("Sharing desk data: " + line);
+    				for ( Entry<String, Map<String, Object>> entry : DeskViewingHandler.deskViewingTbl.entrySet() ) {
+    					if ( entry.getKey().equals(login) ) {
+    						// отправляем данные доскам на просмотр
+    						log.info("Viewing desk was found");
+    						PrintWriter vOut = (PrintWriter)entry.getValue().get("out");
+    						vOut.write(line+"\n");
+    						vOut.flush();
+    					}
+    				}
     			}
 			} catch (IOException e) {
-				
+				e.printStackTrace();
 			} finally {
 				Util.closeResource(out);
 				Util.closeResource(in);
@@ -913,7 +933,7 @@ public class ChatThreadedServer {
 		private final ChatThreadedServer server;
 		
 		// map соединений на просмотр расшаренных досок
-    	private static Hashtable<String, Socket> deskViewingTbl; 
+    	private static Hashtable<String, Map<String, Object>> deskViewingTbl; 
     	
     	public static final String MESSAGE_VIEWING = "viewing";
     	
@@ -932,33 +952,40 @@ public class ChatThreadedServer {
 		public void run() {
 			log.info("Do desk viewing processing");
 			Socket sock 		= null;
-			BufferedReader in 	= null;
+			PrintWriter out 	= null;
+			BufferedReader in	= null;
 			try {
 				while (true) {
 					sock	= srvViewingSk.accept();
 					in 		= new BufferedReader(new InputStreamReader(sock.getInputStream()));
+					out		= new PrintWriter(sock.getOutputStream());
 					
 	    			// читаем заголовок в формате: login:viewing
 					String[] params = in.readLine().split(":");
-					if ( params[1] == null ) {
+					if ( params.length < 3 ) {
 						// что-то не так с заголовком - в игнор
 						log.info("Desk View: something wrong with header");
 						Util.closeResource(in);
+						Util.closeResource(out);
 						Util.closeResource(sock);
 						continue;
 					}
-					log.info("New desk connection: login: " + params[0] + " action: " + params[1]);
+					log.info("New desk connection: login: " + params[0] + " action: " + params[1] + " to: " + params[2]);
 					if ( params[1].equals(MESSAGE_VIEWING) ) {
 						// соединение на просмотр - заносим в мап
-						deskViewingTbl.put(params[0], sock);
+						Map<String, Object> map = new HashMap<>();
+						map.put("sock", sock);
+						map.put("in", in);
+						map.put("out", out);
+						deskViewingTbl.put(params[2], map);
 					}
-					Util.closeResource(in);
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			
 			} finally {
 				Util.closeResource(in);
+				Util.closeResource(out);
 				Util.closeResource(sock);
 			}
 		}
