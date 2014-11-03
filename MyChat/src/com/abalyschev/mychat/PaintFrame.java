@@ -164,7 +164,7 @@ public class PaintFrame extends JFrame {
                 }
                 
                 // данные о положении последней и текущей точек
-                String line = lastPoint.x + ":" + lastPoint.y + ":" + e.getPoint().x + ":" + e.getPoint().y; 
+                String line = "drawLine:" + lastPoint.x + "&" + lastPoint.y + ":" + e.getPoint().x + "&" + e.getPoint().y; 
                 
                 // в режиме предоставления передаем данные о положении мыши на сервер
                 if ( mode == Mode.SHARING ) {
@@ -299,6 +299,8 @@ public class PaintFrame extends JFrame {
     					+ " isBound: " 		+ paintDeskSk.isBound());
         		while ( (line = in.readLine()) != null ) {
         			log.info("Desk viewing info: " + line);
+        			// выполняем команду
+        			DeskCmdDecoder.executeCmd(line, PaintFrame.this);
         			if ( COMMAND_EXIT.equals(line) ) {
         				// выход из цикла
         				break;

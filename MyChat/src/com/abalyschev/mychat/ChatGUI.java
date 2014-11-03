@@ -570,7 +570,7 @@ public class ChatGUI extends JFrame {
 						ChatGUI.this.paintDeskViewingFrm = new PaintFrame(login, toLogin, PaintFrame.Mode.VIEWING, new Socket(HOST, PORT_DESK_VIEWING));
 						ChatGUI.this.paintDeskViewingFrm.addWindowListener(ChatGUI.wndListener);
 						ChatGUI.this.paintDeskViewingFrm.setVisible(true);
-						((PaintFrame)ChatGUI.this.paintDeskViewingFrm).drawTestLine();
+						//((PaintFrame)ChatGUI.this.paintDeskViewingFrm).drawTestLine();
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
