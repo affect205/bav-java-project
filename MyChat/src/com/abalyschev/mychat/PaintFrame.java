@@ -44,6 +44,12 @@ public class PaintFrame extends JFrame {
 	private String login;
 	private String toLogin;
 	
+	// доступные цвета
+	private static final String RED_BTN = "red_btn";
+    private static final String BLUE_BTN = "blue_btn";
+    private static final String GREEN_BTN = "green_btn";
+    private static final String BLACK_BTN = "black_btn";
+	
 	private static final String COMMAND_EXIT = ".exit";
 	
     List<Line2D.Float> lines = new ArrayList<>();
@@ -112,6 +118,26 @@ public class PaintFrame extends JFrame {
         lastPoint = crntPoint;
         // перерисовываем область окна
         pane.repaint();
+    }
+    
+    /**
+     * установка текущего цвета
+     */
+    public void setLineColor(final String command) {
+    	switch (command) {
+        case RED_BTN:
+            color = Color.RED;
+            break;
+        case BLUE_BTN:
+            color = Color.BLUE;
+            break;
+        case GREEN_BTN:
+            color = Color.GREEN;
+            break;
+        case BLACK_BTN:
+            color = Color.BLACK;
+            break;
+    }
     }
     
     public void drawTestLine() {
@@ -209,11 +235,6 @@ public class PaintFrame extends JFrame {
         JButton btnGreen;
         JButton btnKey;
 
-        private static final String RED_BTN = "red_btn";
-        private static final String BLUE_BTN = "blue_btn";
-        private static final String GREEN_BTN = "green_btn";
-        private static final String BLACK_BTN = "black_btn";
-
         public ButtonPanel() {
             setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
             btnRed = new JButton("red");
@@ -246,20 +267,10 @@ public class PaintFrame extends JFrame {
         @Override
         public void actionPerformed(ActionEvent e) {
             String command = e.getActionCommand();
-
-            switch (command) {
-                case RED_BTN:
-                    color = Color.RED;
-                    break;
-                case BLUE_BTN:
-                    color = Color.BLUE;
-                    break;
-                case GREEN_BTN:
-                    color = Color.GREEN;
-                    break;
-                case BLACK_BTN:
-                    color = Color.BLACK;
-                    break;
+            PaintFrame.this.setLineColor(command);
+            if ( mode == Mode.SHARING ) {
+            	out.write("setLineColor:" + command + "\n");
+            	out.flush();
             }
         }
     }

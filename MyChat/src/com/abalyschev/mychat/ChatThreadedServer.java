@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -862,12 +863,16 @@ public class ChatThreadedServer {
 		private String login;
 		private final ChatThreadedServer server;
 		
-		// map обработчиков на предоставление доски K -> логин V - сокет
+		// список произведенных команд для расшаренных досок 
+		private static Hashtable<String, List<String>> deskCommandsLst;
+		
+		// map обработчиков на предоставление доски K -> логин получателя, V -> сокет
     	private static Hashtable<String, DeskSharingHandler> deskSharingTbl;
     	
     	static {
     		// инициализация статических данных
-    		deskSharingTbl = new Hashtable<>();
+    		deskSharingTbl 	= new Hashtable<>();
+    		deskCommandsLst	= new Hashtable<String, List<String>>();
     	}
     	
     	// сообщения
@@ -877,7 +882,7 @@ public class ChatThreadedServer {
 			this.thread 	= new Thread(this);
 			this.server		= server;
 			this.sharingSk 	= sharingSk;
-			this.login		= "login";
+			this.login		= null;
 			this.in			= new BufferedReader(new InputStreamReader(this.sharingSk.getInputStream()));
 			this.out		= new PrintWriter(this.sharingSk.getOutputStream());
 			
@@ -898,20 +903,27 @@ public class ChatThreadedServer {
     				if ( line.contains(":" + MESSAGE_SHARING) ) {
     					// сообщение приветствия - извлекаем логин
     					log.info("Desk sharing data: " + line);
-    					this.login = line.split(":")[0];
+    					login 		= line.split(":")[0];
+    					deskCommandsLst.put(login, new LinkedList<String>());
     					continue;
     				}
     				
     				// поиск досок для просмотра, подключенных к текущей доске
     				log.info("Sharing desk data: " + line);
     				for ( Entry<String, Map<String, Object>> entry : DeskViewingHandler.deskViewingTbl.entrySet() ) {
-    					if ( entry.getKey().equals(login) ) {
+    					
+    					if ( login != null && entry.getKey().split(":")[1].equals(login) ) {
     						// отправляем данные доскам на просмотр
     						log.info("Viewing desk was found");
     						PrintWriter vOut = (PrintWriter)entry.getValue().get("out");
     						vOut.write(line+"\n");
     						vOut.flush();
     					}
+    				}
+    				
+    				// запоминаем команду
+    				if ( login != null && deskCommandsLst.containsKey(login) ) {
+    					deskCommandsLst.get(login).add(line);
     				}
     			}
 			} catch (IOException e) {
@@ -920,6 +932,20 @@ public class ChatThreadedServer {
 				Util.closeResource(out);
 				Util.closeResource(in);
 				Util.closeResource(sharingSk);
+			}
+		}
+		
+		/**
+		 * Приведение новой viewing доски в соответствие с текущим видом sharing доски
+		 */
+		public static void doDeskSync(final Map<String, Object> conn, final String sharingLogin) {
+			if ( ! deskCommandsLst.containsKey(sharingLogin) ) {
+				return;
+			}
+			for ( String cmd : deskCommandsLst.get(sharingLogin) ) {
+				PrintWriter vOut = (PrintWriter)conn.get("out");
+				vOut.write(cmd+"\n");
+				vOut.flush();
 			}
 		}
 	}
@@ -977,7 +1003,10 @@ public class ChatThreadedServer {
 						map.put("sock", sock);
 						map.put("in", in);
 						map.put("out", out);
-						deskViewingTbl.put(params[2], map);
+						deskViewingTbl.put(params[0] + ":" + params[2], map);
+						
+						// природим новую viewing доску в соответствие с текущим видом sharing доски
+						DeskSharingHandler.doDeskSync(map, params[2]);
 					}
 				}
 			} catch (IOException e) {
