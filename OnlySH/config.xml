@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!-- Config of application instance -->
+<config>
+<options>
+	<option name="screen_period" type="int">10</option>
+	<option name="save_auth" type="bool">false</option>
+	<option name="save_auto" type="bool">false</option>
+	<option name="report_period" type="int">1</option>
+</options>
+</config>

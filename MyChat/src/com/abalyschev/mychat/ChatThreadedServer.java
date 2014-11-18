@@ -863,16 +863,20 @@ public class ChatThreadedServer {
 		private String login;
 		private final ChatThreadedServer server;
 		
-		// список произведенных команд для расшаренных досок 
-		private static Hashtable<String, List<String>> deskCommandsLst;
+		// map очередей произведенных команд для расшаренных досок 
+		private static Hashtable<String, LinkedList<String>> deskCommandsTbl;
 		
 		// map обработчиков на предоставление доски K -> логин получателя, V -> сокет
     	private static Hashtable<String, DeskSharingHandler> deskSharingTbl;
     	
+    	// размер очереди команд
+    	private static final int DESK_CMD_QUEUE_LIMIT = 1000;
+    	
+    	
     	static {
     		// инициализация статических данных
     		deskSharingTbl 	= new Hashtable<>();
-    		deskCommandsLst	= new Hashtable<String, List<String>>();
+    		deskCommandsTbl	= new Hashtable<String, LinkedList<String>>();
     	}
     	
     	// сообщения
@@ -904,7 +908,7 @@ public class ChatThreadedServer {
     					// сообщение приветствия - извлекаем логин
     					log.info("Desk sharing data: " + line);
     					login 		= line.split(":")[0];
-    					deskCommandsLst.put(login, new LinkedList<String>());
+    					deskCommandsTbl.put(login, new LinkedList<String>());
     					continue;
     				}
     				
@@ -922,8 +926,8 @@ public class ChatThreadedServer {
     				}
     				
     				// запоминаем команду
-    				if ( login != null && deskCommandsLst.containsKey(login) ) {
-    					deskCommandsLst.get(login).add(line);
+    				if ( login != null && deskCommandsTbl.containsKey(login) ) {
+    					addCmd(login, line);
     				}
     			}
 			} catch (IOException e) {
@@ -939,14 +943,28 @@ public class ChatThreadedServer {
 		 * Приведение новой viewing доски в соответствие с текущим видом sharing доски
 		 */
 		public static void doDeskSync(final Map<String, Object> conn, final String sharingLogin) {
-			if ( ! deskCommandsLst.containsKey(sharingLogin) ) {
+			if ( ! deskCommandsTbl.containsKey(sharingLogin) ) {
 				return;
 			}
-			for ( String cmd : deskCommandsLst.get(sharingLogin) ) {
+			for ( String cmd : deskCommandsTbl.get(sharingLogin) ) {
 				PrintWriter vOut = (PrintWriter)conn.get("out");
 				vOut.write(cmd+"\n");
 				vOut.flush();
 			}
+		}
+		
+		/**
+		 * Добавление новой комады в очередь команд
+		 */
+		public static void addCmd(final String login, final String cmd) {
+			if ( ! deskCommandsTbl.containsKey(login) ) {
+				return;
+			}
+			LinkedList<String> queue = deskCommandsTbl.get(login);
+			if ( queue.size() >= DESK_CMD_QUEUE_LIMIT ) {
+				queue.removeFirst();
+			}
+			queue.addLast(cmd);
 		}
 	}
 	

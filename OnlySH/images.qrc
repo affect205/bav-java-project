@@ -1,0 +1,17 @@
+<RCC>
+    <qresource>
+        <file>images/email.png</file>
+        <file>images/phone_mobile.png</file>
+        <file>images/phone_service.png</file>
+        <file>images/player_play.png</file>
+        <file>images/player_pause.png</file>
+        <file>images/player_stop.png</file>
+        <file>images/refresh.png</file>
+        <file>images/refresh_draw.png</file>
+        <file>images/screen_on.png</file>
+        <file>images/screen_off.png</file>
+        <file>images/user_disabled.png</file>
+        <file>images/zoom_in.png</file>
+        <file>images/zoom_out.png</file>
+    </qresource>
+</RCC>

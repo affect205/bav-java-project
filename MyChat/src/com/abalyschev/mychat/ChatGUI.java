@@ -126,11 +126,17 @@ public class ChatGUI extends JFrame {
 	private static JFrame paintDeskSharingFrm;
 	private static JFrame paintDeskViewingFrm;
 	
-	
 	// логин пользователя
 	private static final String LOGIN_UNKNOWN = "unknown";
 	private static String userLogin = LOGIN_UNKNOWN;
-		
+	
+	// подключение к хранилищу данных
+	private static ChatStorage chatStorage = ChatStorage.getInstance();
+	
+	/**
+	 * Запуск приолжения
+	 * @param login
+	 */
 	public static void startChat(final String login) {
 	    javax.swing.SwingUtilities.invokeLater(new Runnable() {
 	        public void run() {
@@ -185,6 +191,9 @@ public class ChatGUI extends JFrame {
 	    add(viewMsgPnl, BorderLayout.CENTER);
 	    add(sendMsgPnl, BorderLayout.SOUTH); 
 	    add(infoPnl,	BorderLayout.NORTH);
+	    
+	    // инициализация данных хранилища
+	    initStorage();
 	    
 	    // запуск клиента
 	    client = new ClientChat(this);
@@ -318,6 +327,16 @@ public class ChatGUI extends JFrame {
 	    
 	    infoPnl.add(loginLb);
 	    
+	}
+	
+	/**
+	 * Инициализация хранилища данных
+	 */
+	private void initStorage() {
+		List<ChatMessage> lastMsgLst = chatStorage.getLastMessages();
+		for ( ChatMessage msg : lastMsgLst ) {
+			
+		}
 	}
 	
 	protected static String getLogin() {
